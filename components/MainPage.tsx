@@ -17,8 +17,9 @@ const cormorant = Cormorant_Garamond({
 type MainPageProps = {
   slug?: string;
   mainGuest: string;
+  mainGuestRsvp?: Guest;
   plusOne?: string;
-  guests?: Guest[];
+  additionalGuests?: Guest[];
   direction: "ltr" | "rtl";
   personalizedMode?: boolean;
   onShowDetails: () => void;
@@ -27,8 +28,9 @@ type MainPageProps = {
 export default function MainPage({
   slug,
   mainGuest,
+  mainGuestRsvp,
   plusOne,
-  guests,
+  additionalGuests,
   direction,
   personalizedMode = true,
   onShowDetails,
@@ -40,8 +42,12 @@ export default function MainPage({
       <BottomText personalizedMode={personalizedMode} />
       <DateSection />
       <LocationLink />
-      {slug && guests && guests.length > 0 && (
-        <RSVP slug={slug} guests={guests} />
+      {slug && mainGuestRsvp && (
+        <RSVP
+          slug={slug}
+          mainGuest={mainGuestRsvp}
+          additionalGuests={additionalGuests ?? []}
+        />
       )}
       <button
         onClick={onShowDetails}

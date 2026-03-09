@@ -8,8 +8,9 @@ import MainPage from "./MainPage";
 type InvitationProps = {
   slug?: string;
   mainGuest: string;
+  mainGuestRsvp?: Guest;
   plusOne?: string;
-  guests?: Guest[];
+  additionalGuests?: Guest[];
   direction: "ltr" | "rtl";
   personalizedMode?: boolean;
 };
@@ -17,8 +18,9 @@ type InvitationProps = {
 export default function Invitation({
   slug,
   mainGuest,
+  mainGuestRsvp,
   plusOne,
-  guests,
+  additionalGuests,
   direction,
   personalizedMode = true,
 }: InvitationProps) {
@@ -37,8 +39,9 @@ export default function Invitation({
       <MainPage
         slug={slug}
         mainGuest={mainGuest}
+        mainGuestRsvp={mainGuestRsvp}
         plusOne={plusOne}
-        guests={guests}
+        additionalGuests={additionalGuests}
         direction={direction}
         personalizedMode={personalizedMode}
         onShowDetails={() => setPage("details")}

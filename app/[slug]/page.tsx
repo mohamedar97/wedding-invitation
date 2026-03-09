@@ -30,8 +30,13 @@ export default async function GuestPage({ params }: GuestPageProps) {
     <Invitation
       slug={slug}
       mainGuest={guest.mainGuestName}
+      mainGuestRsvp={{
+        name: guest.mainGuestName,
+        confirmed: guest.mainGuestConfirmed,
+        confirmedAt: guest.mainGuestConfirmedAt,
+      }}
       plusOne={guest.plusOneName}
-      guests={guest.guests}
+      additionalGuests={guest.additionalGuests}
       direction={guest.preferedLanguage === "ar" ? "rtl" : "ltr"}
     />
   );

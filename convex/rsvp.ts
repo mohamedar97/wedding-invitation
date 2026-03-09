@@ -4,7 +4,8 @@ import { mutation } from "./_generated/server";
 export const updateGuestConfirmation = mutation({
   args: {
     slug: v.string(),
-    guestIndex: v.number(),
+    guestIndex: v.optional(v.number()),
+    isMainGuest: v.boolean(),
     confirmed: v.boolean(),
   },
   handler: async (ctx, args) => {
@@ -17,15 +18,32 @@ export const updateGuestConfirmation = mutation({
       throw new Error(`No guest record found for slug: ${args.slug}`);
     }
 
-    const updatedGuests = [...record.guests];
-    updatedGuests[args.guestIndex] = {
-      ...updatedGuests[args.guestIndex],
+    if (args.isMainGuest) {
+      await ctx.db.patch(record._id, {
+        mainGuestConfirmed: args.confirmed,
+        mainGuestConfirmedAt: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const additionalGuests = record.additionalGuests ?? [];
+
+    if (
+      args.guestIndex === undefined ||
+      !additionalGuests[args.guestIndex]
+    ) {
+      throw new Error(`No guest found at index ${args.guestIndex}`);
+    }
+
+    const updatedAdditionalGuests = [...additionalGuests];
+    updatedAdditionalGuests[args.guestIndex] = {
+      ...updatedAdditionalGuests[args.guestIndex],
       confirmed: args.confirmed,
       confirmedAt: new Date().toISOString(),
     };
 
     await ctx.db.patch(record._id, {
-      guests: updatedGuests,
+      additionalGuests: updatedAdditionalGuests,
     });
   },
 });

@@ -23,29 +23,64 @@ const cormorant = Cormorant_Garamond({
 
 type RSVPProps = {
   slug: string;
-  guests: Guest[];
+  mainGuest: Guest;
+  additionalGuests: Guest[];
 };
 
-export default function RSVP({ slug, guests: initialGuests }: RSVPProps) {
-  const [guests, setGuests] = useState(initialGuests);
-  const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
-  const updateGuest = useMutation(api.rsvp.updateGuestConfirmation);
-  if (!guests) return null;
-  const allResponded = guests.every((g) => g.confirmed !== undefined);
+type RSVPEntry = {
+  kind: "main" | "guest";
+  guestIndex?: number;
+} & Guest;
 
-  async function handleToggle(index: number, confirmed: boolean) {
-    setLoadingIndex(index);
+export default function RSVP({
+  slug,
+  mainGuest: initialMainGuest,
+  additionalGuests: initialAdditionalGuests,
+}: RSVPProps) {
+  const [mainGuest, setMainGuest] = useState(initialMainGuest);
+  const [additionalGuests, setAdditionalGuests] = useState(
+    initialAdditionalGuests,
+  );
+  const [loadingTarget, setLoadingTarget] = useState<string | null>(null);
+  const updateGuest = useMutation(api.rsvp.updateGuestConfirmation);
+  const rsvpEntries: RSVPEntry[] = [
+    { ...mainGuest, kind: "main" },
+    ...additionalGuests.map((guest, index) => ({
+      ...guest,
+      kind: "guest" as const,
+      guestIndex: index,
+    })),
+  ];
+  const allResponded = rsvpEntries.every(
+    (guest) => guest.confirmed !== undefined,
+  );
+
+  async function handleToggle(entry: RSVPEntry, confirmed: boolean) {
+    const confirmedAt = new Date().toISOString();
+    const loadingKey =
+      entry.kind === "main" ? "main" : `guest-${entry.guestIndex}`;
+    setLoadingTarget(loadingKey);
     try {
-      await updateGuest({ slug, guestIndex: index, confirmed });
-      setGuests((prev) =>
-        prev.map((g, i) =>
-          i === index
-            ? { ...g, confirmed, confirmedAt: new Date().toISOString() }
-            : g,
-        ),
-      );
+      await updateGuest({
+        slug,
+        isMainGuest: entry.kind === "main",
+        guestIndex: entry.guestIndex,
+        confirmed,
+      });
+
+      if (entry.kind === "main") {
+        setMainGuest((prev) => ({ ...prev, confirmed, confirmedAt }));
+      } else {
+        setAdditionalGuests((prev) =>
+          prev.map((guest, index) =>
+            index === entry.guestIndex
+              ? { ...guest, confirmed, confirmedAt }
+              : guest,
+          ),
+        );
+      }
     } finally {
-      setLoadingIndex(null);
+      setLoadingTarget(null);
     }
   }
 
@@ -71,9 +106,9 @@ export default function RSVP({ slug, guests: initialGuests }: RSVPProps) {
         </DialogHeader>
 
         <div className="flex flex-col gap-3 py-2">
-          {guests.map((guest, index) => (
+          {rsvpEntries.map((guest) => (
             <div
-              key={index}
+              key={guest.kind === "main" ? "main" : guest.guestIndex}
               className="flex items-center justify-between rounded-lg border border-[#834213]/20 px-4 py-3"
             >
               <span
@@ -83,12 +118,15 @@ export default function RSVP({ slug, guests: initialGuests }: RSVPProps) {
               </span>
 
               <div className="flex items-center gap-2">
-                {loadingIndex === index ? (
+                {loadingTarget ===
+                (guest.kind === "main"
+                  ? "main"
+                  : `guest-${guest.guestIndex}`) ? (
                   <Loader2Icon className="size-5 animate-spin text-[#834213]/50" />
                 ) : (
                   <>
                     <button
-                      onClick={() => handleToggle(index, true)}
+                      onClick={() => handleToggle(guest, true)}
                       className={`flex size-9 cursor-pointer items-center justify-center rounded-full border transition-colors ${
                         guest.confirmed === true
                           ? "border-emerald-500 bg-emerald-500 text-white"
@@ -99,7 +137,7 @@ export default function RSVP({ slug, guests: initialGuests }: RSVPProps) {
                       <CheckIcon className="size-5" />
                     </button>
                     <button
-                      onClick={() => handleToggle(index, false)}
+                      onClick={() => handleToggle(guest, false)}
                       className={`flex size-9 cursor-pointer items-center justify-center rounded-full border transition-colors ${
                         guest.confirmed === false
                           ? "border-red-500 bg-red-500 text-white"
