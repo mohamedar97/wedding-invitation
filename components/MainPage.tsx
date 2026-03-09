@@ -4,7 +4,6 @@ import Names from "@/components/Names";
 import TopText from "@/components/TopText";
 import LocationLink from "@/components/LocationLink";
 import RSVP from "@/components/RSVP";
-import { Guest } from "@/lib/types";
 import Decorations from "./Decoration";
 import { Cormorant_Garamond } from "next/font/google";
 import { ChevronRightIcon } from "lucide-react";
@@ -17,9 +16,7 @@ const cormorant = Cormorant_Garamond({
 type MainPageProps = {
   slug?: string;
   mainGuest: string;
-  mainGuestRsvp?: Guest;
   plusOne?: string;
-  additionalGuests?: Guest[];
   direction: "ltr" | "rtl";
   personalizedMode?: boolean;
   onShowDetails: () => void;
@@ -28,9 +25,7 @@ type MainPageProps = {
 export default function MainPage({
   slug,
   mainGuest,
-  mainGuestRsvp,
   plusOne,
-  additionalGuests,
   direction,
   personalizedMode = true,
   onShowDetails,
@@ -42,13 +37,7 @@ export default function MainPage({
       <BottomText personalizedMode={personalizedMode} />
       <DateSection />
       <LocationLink />
-      {slug && mainGuestRsvp && (
-        <RSVP
-          slug={slug}
-          mainGuest={mainGuestRsvp}
-          additionalGuests={additionalGuests ?? []}
-        />
-      )}
+      {slug && <RSVP slug={slug} />}
       <button
         onClick={onShowDetails}
         className={`${cormorant.className} relative z-20 mt-3 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]`}

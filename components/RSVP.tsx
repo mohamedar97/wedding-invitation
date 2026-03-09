@@ -10,11 +10,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { CheckIcon, XIcon, Loader2Icon } from "lucide-react";
 import { Cormorant_Garamond } from "next/font/google";
 import { useState } from "react";
-import { Guest } from "@/lib/types";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -23,40 +22,40 @@ const cormorant = Cormorant_Garamond({
 
 type RSVPProps = {
   slug: string;
-  mainGuest: Guest;
-  additionalGuests: Guest[];
 };
 
 type RSVPEntry = {
   kind: "main" | "guest";
   guestIndex?: number;
-} & Guest;
+  name: string;
+  confirmed?: boolean;
+  confirmedAt?: string;
+};
 
-export default function RSVP({
-  slug,
-  mainGuest: initialMainGuest,
-  additionalGuests: initialAdditionalGuests,
-}: RSVPProps) {
-  const [mainGuest, setMainGuest] = useState(initialMainGuest);
-  const [additionalGuests, setAdditionalGuests] = useState(
-    initialAdditionalGuests,
-  );
+export default function RSVP({ slug }: RSVPProps) {
+  const guestRecord = useQuery(api.getGuests.get, { slug });
   const [loadingTarget, setLoadingTarget] = useState<string | null>(null);
   const updateGuest = useMutation(api.rsvp.updateGuestConfirmation);
-  const rsvpEntries: RSVPEntry[] = [
-    { ...mainGuest, kind: "main" },
-    ...additionalGuests.map((guest, index) => ({
-      ...guest,
-      kind: "guest" as const,
-      guestIndex: index,
-    })),
-  ];
+  const rsvpEntries: RSVPEntry[] = !guestRecord
+    ? []
+    : [
+        {
+          kind: "main",
+          name: guestRecord.mainGuestName,
+          confirmed: guestRecord.mainGuestConfirmed,
+          confirmedAt: guestRecord.mainGuestConfirmedAt,
+        },
+        ...(guestRecord.additionalGuests ?? []).map((guest, index) => ({
+          ...guest,
+          kind: "guest" as const,
+          guestIndex: index,
+        })),
+      ];
   const allResponded = rsvpEntries.every(
     (guest) => guest.confirmed !== undefined,
   );
 
   async function handleToggle(entry: RSVPEntry, confirmed: boolean) {
-    const confirmedAt = new Date().toISOString();
     const loadingKey =
       entry.kind === "main" ? "main" : `guest-${entry.guestIndex}`;
     setLoadingTarget(loadingKey);
@@ -67,18 +66,6 @@ export default function RSVP({
         guestIndex: entry.guestIndex,
         confirmed,
       });
-
-      if (entry.kind === "main") {
-        setMainGuest((prev) => ({ ...prev, confirmed, confirmedAt }));
-      } else {
-        setAdditionalGuests((prev) =>
-          prev.map((guest, index) =>
-            index === entry.guestIndex
-              ? { ...guest, confirmed, confirmedAt }
-              : guest,
-          ),
-        );
-      }
     } finally {
       setLoadingTarget(null);
     }
@@ -105,56 +92,62 @@ export default function RSVP({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-3 py-2">
-          {rsvpEntries.map((guest) => (
-            <div
-              key={guest.kind === "main" ? "main" : guest.guestIndex}
-              className="flex items-center justify-between rounded-lg border border-[#834213]/20 px-4 py-3"
-            >
-              <span
-                className={`${cormorant.className} text-lg font-medium text-[#834213]`}
+        {!guestRecord ? (
+          <div className="flex justify-center py-6">
+            <Loader2Icon className="size-5 animate-spin text-[#834213]/50" />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 py-2">
+            {rsvpEntries.map((guest) => (
+              <div
+                key={guest.kind === "main" ? "main" : guest.guestIndex}
+                className="flex items-center justify-between rounded-lg border border-[#834213]/20 px-4 py-3"
               >
-                {guest.name}
-              </span>
+                <span
+                  className={`${cormorant.className} text-lg font-medium text-[#834213]`}
+                >
+                  {guest.name}
+                </span>
 
-              <div className="flex items-center gap-2">
-                {loadingTarget ===
-                (guest.kind === "main"
-                  ? "main"
-                  : `guest-${guest.guestIndex}`) ? (
-                  <Loader2Icon className="size-5 animate-spin text-[#834213]/50" />
-                ) : (
-                  <>
-                    <button
-                      onClick={() => handleToggle(guest, true)}
-                      className={`flex size-9 cursor-pointer items-center justify-center rounded-full border transition-colors ${
-                        guest.confirmed === true
-                          ? "border-emerald-500 bg-emerald-500 text-white"
-                          : "border-emerald-500/40 text-emerald-500/40 hover:border-emerald-500 hover:text-emerald-500"
-                      }`}
-                      aria-label={`Confirm ${guest.name}`}
-                    >
-                      <CheckIcon className="size-5" />
-                    </button>
-                    <button
-                      onClick={() => handleToggle(guest, false)}
-                      className={`flex size-9 cursor-pointer items-center justify-center rounded-full border transition-colors ${
-                        guest.confirmed === false
-                          ? "border-red-500 bg-red-500 text-white"
-                          : "border-red-500/40 text-red-500/40 hover:border-red-500 hover:text-red-500"
-                      }`}
-                      aria-label={`Decline ${guest.name}`}
-                    >
-                      <XIcon className="size-5" />
-                    </button>
-                  </>
-                )}
+                <div className="flex items-center gap-2">
+                  {loadingTarget ===
+                  (guest.kind === "main"
+                    ? "main"
+                    : `guest-${guest.guestIndex}`) ? (
+                    <Loader2Icon className="size-5 animate-spin text-[#834213]/50" />
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleToggle(guest, true)}
+                        className={`flex size-9 cursor-pointer items-center justify-center rounded-full border transition-colors ${
+                          guest.confirmed === true
+                            ? "border-emerald-500 bg-emerald-500 text-white"
+                            : "border-emerald-500/40 text-emerald-500/40 hover:border-emerald-500 hover:text-emerald-500"
+                        }`}
+                        aria-label={`Confirm ${guest.name}`}
+                      >
+                        <CheckIcon className="size-5" />
+                      </button>
+                      <button
+                        onClick={() => handleToggle(guest, false)}
+                        className={`flex size-9 cursor-pointer items-center justify-center rounded-full border transition-colors ${
+                          guest.confirmed === false
+                            ? "border-red-500 bg-red-500 text-white"
+                            : "border-red-500/40 text-red-500/40 hover:border-red-500 hover:text-red-500"
+                        }`}
+                        aria-label={`Decline ${guest.name}`}
+                      >
+                        <XIcon className="size-5" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {allResponded && (
+        {guestRecord && allResponded && (
           <p
             className={`${cormorant.className} text-center text-sm text-[#834213]/70`}
           >

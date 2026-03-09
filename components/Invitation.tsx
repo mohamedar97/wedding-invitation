@@ -2,15 +2,12 @@
 
 import { useState } from "react";
 import DetailsPage from "@/components/DetailsPage";
-import { Guest } from "@/lib/types";
 import MainPage from "./MainPage";
 
 type InvitationProps = {
   slug?: string;
   mainGuest: string;
-  mainGuestRsvp?: Guest;
   plusOne?: string;
-  additionalGuests?: Guest[];
   direction: "ltr" | "rtl";
   personalizedMode?: boolean;
 };
@@ -18,9 +15,7 @@ type InvitationProps = {
 export default function Invitation({
   slug,
   mainGuest,
-  mainGuestRsvp,
   plusOne,
-  additionalGuests,
   direction,
   personalizedMode = true,
 }: InvitationProps) {
@@ -39,9 +34,7 @@ export default function Invitation({
       <MainPage
         slug={slug}
         mainGuest={mainGuest}
-        mainGuestRsvp={mainGuestRsvp}
         plusOne={plusOne}
-        additionalGuests={additionalGuests}
         direction={direction}
         personalizedMode={personalizedMode}
         onShowDetails={() => setPage("details")}
