@@ -61,14 +61,15 @@ export default function DetailsPage({ direction, onBack }: DetailsPageProps) {
         <div className="h-px w-16 bg-[#da9e20]/30" />
 
         <SectionCard icon={BabyIcon} title="Adults-Only Celebration">
-          We wish your loved ones a lovely night. The event is adults-only.
+          We love your little ones, but our wedding will be adults-only. We
+          appreciate your understanding.{" "}
         </SectionCard>
 
         <div className="h-px w-16 bg-[#da9e20]/30" />
 
         <SectionCard icon={LockKeyholeIcon} title="Invitation Note">
-          This invitation is reserved especially for you. Please don&apos;t
-          share it with anyone.
+          This invitation is reserved especially for you. Please do not share
+          it.
         </SectionCard>
 
         <div className="h-px w-16 bg-[#da9e20]/30" />
