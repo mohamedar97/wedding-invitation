@@ -5,6 +5,7 @@ import { GoldenBorder } from "@/components/GoldenBorder";
 import Names from "@/components/Names";
 import TopRightArch from "@/components/TopRightArch";
 import TopText from "@/components/TopText";
+import LocationLink from "@/components/LocationLink";
 import RSVP from "@/components/RSVP";
 import { Guest } from "@/lib/types";
 
@@ -42,6 +43,7 @@ export default function InvitationPage({
       <Names mainGuest={mainGuest} plusOne={plusOne} />
       <BottomText personalizedMode={personalizedMode} />
       <DateSection />
+      <LocationLink />
       {slug && guests && guests.length > 0 && (
         <RSVP slug={slug} guests={guests} />
       )}
