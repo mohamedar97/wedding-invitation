@@ -56,7 +56,7 @@ export default function DetailsPage({ direction, onBack }: DetailsPageProps) {
 
         <SectionCard icon={CameraIcon} title="Photo Gallery">
           <a
-            href="https://drive.google.com"
+            href="https://drive.google.com/drive/folders/1aoR_R2I-IJar0GbiRHpDYpJ2F0sCDCED?usp=sharing"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-[#834213] underline underline-offset-2 transition-colors hover:text-[#da9e20]"
