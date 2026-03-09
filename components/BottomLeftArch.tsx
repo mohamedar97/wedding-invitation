@@ -9,7 +9,7 @@ export default function BottomLeftArch() {
         width={480}
         height={480}
         priority
-        className="h-auto w-64 lg:w-full"
+        className="h-auto w-52 lg:w-full"
       />
     </div>
   );

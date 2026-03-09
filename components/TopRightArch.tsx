@@ -9,7 +9,7 @@ export default function TopRightArch() {
         width={300}
         height={300}
         priority
-        className="h-auto w-64 lg:w-full"
+        className="h-auto w-48 lg:w-full"
       />
     </div>
   );

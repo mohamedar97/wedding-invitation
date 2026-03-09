@@ -16,7 +16,7 @@ function SideBox({ label }: { label: string }) {
 export default function DateSection() {
   return (
     <section
-      className={`relative z-20 w-full pt-10 flex items-center justify-center gap-6 ${cormorant.className}`}
+      className={`relative z-20 w-full pt-4 flex items-center justify-center gap-6 ${cormorant.className}`}
     >
       <SideBox label="Saturday" />
       <div className="flex flex-col items-center text-[#834213]">
