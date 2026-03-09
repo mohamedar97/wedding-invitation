@@ -12,3 +12,10 @@ export const get = query({
       .first();
   },
 });
+
+export const getSlugs = query({
+  handler: async (ctx) => {
+    const guests = await ctx.db.query("guests").collect();
+    return guests.map(({ slug }) => slug);
+  },
+});
