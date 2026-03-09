@@ -28,8 +28,10 @@ export default async function GuestPage({ params }: GuestPageProps) {
 
   return (
     <InvitationPage
-      mainGuest={guest.mainGuest}
-      plusOne={guest.plusOne}
+      slug={slug}
+      mainGuest={guest.mainGuestName}
+      plusOne={guest.plusOneName}
+      guests={guest.guests}
       direction={guest.preferedLanguage === "ar" ? "rtl" : "ltr"}
     />
   );

@@ -9,6 +9,7 @@
  */
 
 import type * as getGuests from "../getGuests.js";
+import type * as rsvp from "../rsvp.js";
 
 import type {
   ApiFromModules,
@@ -18,6 +19,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   getGuests: typeof getGuests;
+  rsvp: typeof rsvp;
 }>;
 
 /**
