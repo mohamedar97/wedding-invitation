@@ -14,7 +14,7 @@ export default function LocationLink() {
       rel="noopener noreferrer"
       className={`${cormorant.className} relative z-20 mt-3 flex items-center gap-1.5 text-lg font-medium text-[#834213] transition-colors hover:text-[#da9e20]`}
     >
-      <MapPinIcon className="size-4" />
+      <MapPinIcon className="size-4 animate-bounce" />
       Aurora Lounge
     </a>
   );
