@@ -28,6 +28,11 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${cormorant.variable} ${geistMono.variable} font-sans antialiased`}
+        style={{
+          backgroundImage: "url('/background.webp')",
+          backgroundRepeat: "repeat",
+          backgroundSize: "auto",
+        }}
       >
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
