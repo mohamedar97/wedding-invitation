@@ -4,7 +4,14 @@ import TopRightArch from "@/components/TopRightArch";
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen overflow-hidden">
+    <main
+      className="relative min-h-screen overflow-hidden"
+      style={{
+        backgroundImage: "url('/background.png')",
+        backgroundRepeat: "repeat",
+        backgroundSize: "auto",
+      }}
+    >
       <TopRightArch />
       <BottomLeftArch />
       <GoldenBorder />
