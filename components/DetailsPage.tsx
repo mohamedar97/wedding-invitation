@@ -4,7 +4,6 @@ import {
   CameraIcon,
   BabyIcon,
   LockKeyholeIcon,
-  ClockIcon,
   ChevronLeftIcon,
 } from "lucide-react";
 import Decorations from "./Decoration";
@@ -81,7 +80,7 @@ export default function DetailsPage({ direction, onBack }: DetailsPageProps) {
         <div className="h-px w-16 bg-[#da9e20]/30" />
 
         <SectionCard icon={LockKeyholeIcon} title="Invitation Note">
-          This invitation is reserved especially for you. Please don't share it
+          This invitation is reserved especially for you. Please don&apos;t share it
           with anyone.
         </SectionCard>
 

@@ -1,4 +1,4 @@
-import InvitationPage from "@/components/InvitationPage";
+import Invitation from "@/components/Invitation";
 import { api } from "@/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
 import { notFound } from "next/navigation";
@@ -27,7 +27,7 @@ export default async function GuestPage({ params }: GuestPageProps) {
   }
 
   return (
-    <InvitationPage
+    <Invitation
       slug={slug}
       mainGuest={guest.mainGuestName}
       plusOne={guest.plusOneName}

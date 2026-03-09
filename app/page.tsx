@@ -1,8 +1,8 @@
-import InvitationPage from "@/components/InvitationPage";
+import Invitation from "@/components/Invitation";
 
 export default function Home() {
   return (
-    <InvitationPage
+    <Invitation
       personalizedMode={false}
       mainGuest="Mohamed"
       plusOne="Habiba"
