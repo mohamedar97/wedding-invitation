@@ -1,5 +1,6 @@
 import BottomLeftArch from "@/components/BottomLeftArch";
 import BottomText from "@/components/BottomText";
+import DateSection from "@/components/DateSection";
 import { GoldenBorder } from "@/components/GoldenBorder";
 import Names from "@/components/Names";
 import TopRightArch from "@/components/TopRightArch";
@@ -21,6 +22,7 @@ export default function Home() {
       <TopText />
       <Names />
       <BottomText />
+      <DateSection />
     </main>
   );
 }
