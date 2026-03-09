@@ -52,12 +52,6 @@ export default function DetailsPage({ direction, onBack }: DetailsPageProps) {
           Details
         </h2>
 
-        <div className="h-px w-24 bg-[#da9e20]/50" />
-
-        <SectionCard icon={ShirtIcon} title="Dress Code">
-          Formal Attire
-        </SectionCard>
-
         <div className="h-px w-16 bg-[#da9e20]/30" />
 
         <SectionCard icon={CameraIcon} title="Photo Gallery">
@@ -80,8 +74,8 @@ export default function DetailsPage({ direction, onBack }: DetailsPageProps) {
         <div className="h-px w-16 bg-[#da9e20]/30" />
 
         <SectionCard icon={LockKeyholeIcon} title="Invitation Note">
-          This invitation is reserved especially for you. Please don&apos;t share it
-          with anyone.
+          This invitation is reserved especially for you. Please don&apos;t
+          share it with anyone.
         </SectionCard>
 
         <div className="h-px w-16 bg-[#da9e20]/30" />
