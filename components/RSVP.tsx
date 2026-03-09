@@ -12,13 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { useMutation, useQuery } from "convex/react";
 import { CheckIcon, XIcon, Loader2Icon } from "lucide-react";
-import { Cormorant_Garamond } from "next/font/google";
 import { useState } from "react";
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
 
 type RSVPProps = {
   slug: string;
@@ -75,7 +69,7 @@ export default function RSVP({ slug }: RSVPProps) {
     <Dialog>
       <DialogTrigger asChild>
         <button
-          className={`${cormorant.className} relative z-20 mt-4 cursor-pointer border border-[#834213] bg-transparent px-8 py-2 text-lg font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:bg-[#834213]/10`}
+          className={` relative z-20 mt-4 cursor-pointer border border-[#834213] bg-transparent px-8 py-2 text-lg font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:bg-[#834213]/10`}
         >
           RSVP
         </button>
@@ -83,7 +77,7 @@ export default function RSVP({ slug }: RSVPProps) {
       <DialogContent className="border-[#834213]/30 sm:max-w-md">
         <DialogHeader>
           <DialogTitle
-            className={`${cormorant.className} text-center text-2xl font-semibold text-[#834213]`}
+            className={` text-center text-2xl font-semibold text-[#834213]`}
           >
             RSVP
           </DialogTitle>
@@ -103,9 +97,7 @@ export default function RSVP({ slug }: RSVPProps) {
                 key={guest.kind === "main" ? "main" : guest.guestIndex}
                 className="flex items-center justify-between rounded-lg border border-[#834213]/20 px-4 py-3"
               >
-                <span
-                  className={`${cormorant.className} text-lg font-medium text-[#834213]`}
-                >
+                <span className={` text-lg font-medium text-[#834213]`}>
                   {guest.name}
                 </span>
 
@@ -148,9 +140,7 @@ export default function RSVP({ slug }: RSVPProps) {
         )}
 
         {guestRecord && allResponded && (
-          <p
-            className={`${cormorant.className} text-center text-sm text-[#834213]/70`}
-          >
+          <p className={` text-center text-sm text-[#834213]/70`}>
             Thank you for responding!
           </p>
         )}

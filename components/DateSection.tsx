@@ -1,10 +1,3 @@
-import { Cormorant_Garamond } from "next/font/google";
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
 function SideBox({ label }: { label: string }) {
   return (
     <div className="border-y border-[#834213] text-[#da9e20] uppercase py-1 w-24 text-center text-md font-medium">
@@ -16,7 +9,7 @@ function SideBox({ label }: { label: string }) {
 export default function DateSection() {
   return (
     <section
-      className={`relative z-20 w-full pt-4 flex items-center justify-center gap-6 ${cormorant.className}`}
+      className={`relative z-20 w-full pt-2 flex items-center justify-center gap-6`}
     >
       <SideBox label="Saturday" />
       <div className="flex flex-col items-center text-[#834213]">

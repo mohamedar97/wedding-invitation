@@ -1,17 +1,10 @@
-import { Cormorant_Garamond } from "next/font/google";
 import {
-  ShirtIcon,
   CameraIcon,
   BabyIcon,
   LockKeyholeIcon,
   ChevronLeftIcon,
 } from "lucide-react";
 import Decorations from "./Decoration";
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
 
 function SectionCard({
   icon: Icon,
@@ -26,7 +19,7 @@ function SectionCard({
     <div className="flex flex-col items-center gap-2 text-center">
       <Icon className="size-5 text-[#da9e20]" />
       <h3
-        className={`${cormorant.className} text-lg font-semibold tracking-widest text-[#834213] uppercase`}
+        className={`text-lg font-semibold tracking-widest text-[#834213] uppercase`}
       >
         {title}
       </h3>
@@ -47,7 +40,7 @@ export default function DetailsPage({ direction, onBack }: DetailsPageProps) {
     <Decorations direction={direction}>
       <div className="relative z-20 flex flex-col items-center gap-3 px-12">
         <h2
-          className={`${cormorant.className} text-3xl font-semibold tracking-widest text-[#834213] sm:text-4xl`}
+          className={`text-3xl font-semibold tracking-widest text-[#834213] sm:text-4xl`}
         >
           Details
         </h2>
@@ -83,7 +76,7 @@ export default function DetailsPage({ direction, onBack }: DetailsPageProps) {
 
       <button
         onClick={onBack}
-        className={`${cormorant.className} relative z-20 mt-4 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]`}
+        className={`relative z-20 mt-4 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]`}
       >
         <ChevronLeftIcon className="size-4" />
         Back

@@ -5,13 +5,7 @@ import TopText from "@/components/TopText";
 import LocationLink from "@/components/LocationLink";
 import RSVP from "@/components/RSVP";
 import Decorations from "./Decoration";
-import { Cormorant_Garamond } from "next/font/google";
 import { ChevronRightIcon } from "lucide-react";
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
 
 type MainPageProps = {
   slug?: string;
@@ -40,7 +34,7 @@ export default function MainPage({
       {slug && <RSVP slug={slug} />}
       <button
         onClick={onShowDetails}
-        className={`${cormorant.className} relative z-20 mt-3 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]`}
+        className={`relative z-20 mt-3 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]`}
       >
         More Details
         <ChevronRightIcon className="size-4" />
