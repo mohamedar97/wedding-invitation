@@ -4,7 +4,7 @@ export default function TopRightArch() {
   return (
     <div className="pointer-events-none fixed top-0 right-0 z-10">
       <Image
-        src="/tr.png"
+        src="/tr.webp"
         alt=""
         width={300}
         height={300}

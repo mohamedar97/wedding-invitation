@@ -31,7 +31,7 @@ export default function InvitationPage({
       dir={direction}
       className="relative flex h-dvh max-h-dvh flex-col items-center justify-center overflow-hidden"
       style={{
-        backgroundImage: "url('/background.png')",
+        backgroundImage: "url('/background.webp')",
         backgroundRepeat: "repeat",
         backgroundSize: "auto",
       }}
