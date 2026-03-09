@@ -1,7 +1,6 @@
 "use client";
 
 import { api } from "@/convex/_generated/api";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -14,18 +13,13 @@ import {
 import { useMutation } from "convex/react";
 import { CheckIcon, XIcon, Loader2Icon } from "lucide-react";
 import { Cormorant_Garamond } from "next/font/google";
-import { useState, useTransition } from "react";
+import { useState } from "react";
+import { Guest } from "@/lib/types";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
 });
-
-type Guest = {
-  name: string;
-  confirmed?: boolean;
-  confirmedAt?: string;
-};
 
 type RSVPProps = {
   slug: string;

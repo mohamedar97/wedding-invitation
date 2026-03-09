@@ -6,11 +6,7 @@ import Names from "@/components/Names";
 import TopRightArch from "@/components/TopRightArch";
 import TopText from "@/components/TopText";
 import RSVP from "@/components/RSVP";
-type Guest = {
-  name: string;
-  confirmed?: boolean;
-  confirmedAt?: string;
-};
+import { Guest } from "@/lib/types";
 
 type InvitationPageProps = {
   slug?: string;
@@ -18,6 +14,7 @@ type InvitationPageProps = {
   plusOne?: string;
   guests?: Guest[];
   direction: "ltr" | "rtl";
+  personalizedMode?: boolean;
 };
 
 export default function InvitationPage({
@@ -26,6 +23,7 @@ export default function InvitationPage({
   plusOne,
   guests,
   direction,
+  personalizedMode = true,
 }: InvitationPageProps) {
   return (
     <main
@@ -40,9 +38,9 @@ export default function InvitationPage({
       <TopRightArch />
       <BottomLeftArch />
       <GoldenBorder />
-      <TopText />
+      <TopText personalizedMode={personalizedMode} />
       <Names mainGuest={mainGuest} plusOne={plusOne} />
-      <BottomText />
+      <BottomText personalizedMode={personalizedMode} />
       <DateSection />
       {slug && guests && guests.length > 0 && (
         <RSVP slug={slug} guests={guests} />
