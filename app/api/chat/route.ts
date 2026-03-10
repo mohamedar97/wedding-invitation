@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { api } from "@/convex/_generated/api";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { NextResponse } from "next/server";
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
       additionalGuests: guest.additionalGuests,
       ...guest.notesForAI,
     }),
-    model: google("gemini-3-flash-preview"),
+    model: openai("gpt-5.4"),
     messages: conversationHistory,
   });
 
