@@ -9,7 +9,7 @@ function SideBox({ label }: { label: string }) {
 export default function DateSection() {
   return (
     <section
-      className={`relative z-20 w-full pt-2 flex items-center justify-center gap-6`}
+      className={`relative z-20 w-full pt-1 flex items-center justify-center gap-6`}
     >
       <SideBox label="Saturday" />
       <div className="flex flex-col items-center text-[#834213]">

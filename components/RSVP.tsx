@@ -69,7 +69,7 @@ export default function RSVP({ slug }: RSVPProps) {
     <Dialog>
       <DialogTrigger asChild>
         <button
-          className={` relative z-20 mt-4 cursor-pointer border border-[#834213] bg-transparent px-8 py-2 text-lg font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:bg-[#834213]/10`}
+          className={` relative z-20 mt-2 cursor-pointer border border-[#834213] bg-transparent px-8 py-2 text-lg font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:bg-[#834213]/10`}
         >
           RSVP
         </button>

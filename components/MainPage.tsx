@@ -34,7 +34,7 @@ export default function MainPage({
       {slug && <RSVP slug={slug} />}
       <button
         onClick={onShowDetails}
-        className={`relative z-20 mt-3 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]`}
+        className={`relative z-20 mt-2 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]`}
       >
         More Details
         <ChevronRightIcon className="size-4" />
@@ -43,7 +43,7 @@ export default function MainPage({
         href="https://wa.me/14155238886?text=Hi%20I%20need%20some%20help"
         target="_blank"
         rel="noopener noreferrer"
-        className="relative z-20 mt-3 flex cursor-pointer items-center gap-1.5 text-sm font-medium tracking-wide text-[#834213]/70 transition-colors hover:text-[#25D366]"
+        className="relative z-20 mt-1 flex cursor-pointer items-center gap-1.5 text-sm font-medium tracking-wide text-[#834213]/70 transition-colors hover:text-[#25D366]"
       >
         <MessageCircle className="size-4" />
         Need help?
