@@ -21,5 +21,15 @@ export default defineSchema({
     phone: v.string(),
     preferedLanguage: v.union(v.literal("en"), v.literal("ar")),
     specialMessage: v.optional(v.string()),
-  }).index("by_slug", ["slug"]),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_phone", ["phone"]),
+  conversations: defineTable({
+    guestId: v.id("guests"),
+  }).index("by_guestId", ["guestId"]),
+  messages: defineTable({
+    conversationId: v.id("conversations"),
+    role: v.union(v.literal("user"), v.literal("assistant")),
+    content: v.string(),
+  }).index("by_conversationId", ["conversationId"]),
 });
