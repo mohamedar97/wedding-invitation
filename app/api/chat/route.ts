@@ -23,6 +23,12 @@ function twimlMessage(message: string) {
   return `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(message)}</Message></Response>`;
 }
 
+function unauthorizedResponse() {
+  return new NextResponse("Unauthorized", {
+    status: 401,
+  });
+}
+
 export async function POST(req: Request) {
   const formData = await req.formData();
   const from = formData.get("From");
@@ -32,29 +38,13 @@ export async function POST(req: Request) {
     typeof incomingBody === "string" ? incomingBody.trim() : "";
 
   if (!phone || !messageBody) {
-    return new NextResponse(
-      twimlMessage("We could not process your message."),
-      {
-        headers: {
-          "Content-Type": "text/xml; charset=utf-8",
-        },
-      },
-    );
+    return unauthorizedResponse();
   }
 
   const guest = await fetchQuery(api.getGuests.getByPhone, { phone });
 
   if (!guest) {
-    return new NextResponse(
-      twimlMessage(
-        "We could not find your invitation. Please contact us directly.",
-      ),
-      {
-        headers: {
-          "Content-Type": "text/xml; charset=utf-8",
-        },
-      },
-    );
+    return unauthorizedResponse();
   }
 
   let conversation = await fetchQuery(api.conversations.getByGuestId, {
