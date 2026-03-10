@@ -3,6 +3,7 @@ import { google } from "@ai-sdk/google";
 import { api } from "@/convex/_generated/api";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { NextResponse } from "next/server";
+import { buildZainPrompt } from "./promptBuilder";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -90,8 +91,12 @@ export async function POST(req: Request) {
     ...storedMessages,
     { role: "user", content: messageBody },
   ];
+
   const result = await generateText({
-    system: "",
+    system: buildZainPrompt({
+      guestName: guest.mainGuestName,
+      ...guest.notesForAI,
+    }),
     model: google("gemini-3-flash-preview"),
     messages: conversationHistory,
   });

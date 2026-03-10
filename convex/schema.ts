@@ -1,6 +1,12 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+const languageMode = v.union(
+  v.literal("english"),
+  v.literal("arabic"),
+  v.literal("franco"),
+);
+
 export default defineSchema({
   guests: defineTable({
     mainGuestName: v.string(),
@@ -20,7 +26,21 @@ export default defineSchema({
     email: v.optional(v.string()),
     phone: v.string(),
     preferedLanguage: v.union(v.literal("en"), v.literal("ar")),
-    specialMessage: v.optional(v.string()),
+    notesForAI: v.object({
+      preferredName: v.optional(v.string()),
+      relationshipToCouple: v.optional(v.string()),
+      languageMode: v.optional(languageMode),
+      communicationStyle: v.optional(v.string()),
+      plusOneNames: v.optional(
+        v.array(
+          v.object({ name: v.string(), relationshipToGuest: v.string() }),
+        ),
+      ),
+      memoryNotes: v.optional(v.string()),
+      sensitiveNotes: v.optional(v.string()),
+      lastInteractionSummary: v.optional(v.string()),
+      extraNotes: v.optional(v.string()),
+    }),
   })
     .index("by_slug", ["slug"])
     .index("by_phone", ["phone"]),
