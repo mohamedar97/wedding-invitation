@@ -15,11 +15,26 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 type GuestRecord = Doc<"guests">;
+type AdditionalGuestDraft = {
+  name: string;
+  confirmed: "pending" | "confirmed" | "declined";
+  confirmedAt: string;
+};
+type PlusOneNameDraft = {
+  name: string;
+  relationshipToGuest: string;
+};
 type GuestDraft = {
   guestId: GuestRecord["_id"];
   mainGuestName: string;
@@ -29,21 +44,17 @@ type GuestDraft = {
   plusOneName: string;
   preferedLanguage: "en" | "ar";
   mainGuestConfirmed: "pending" | "confirmed" | "declined";
-  additionalGuestsJson: string;
+  additionalGuests: AdditionalGuestDraft[];
   preferredName: string;
   relationshipToCouple: string;
-  languageMode: "unset" | "english" | "arabic" | "franco";
+  languageMode: "" | "english" | "arabic" | "franco";
   communicationStyle: string;
-  plusOneNamesJson: string;
+  plusOneNames: PlusOneNameDraft[];
   memoryNotes: string;
   sensitiveNotes: string;
   lastInteractionSummary: string;
   extraNotes: string;
 };
-
-function stringifyJson(value: unknown) {
-  return JSON.stringify(value ?? [], null, 2);
-}
 
 function createDraft(guest: GuestRecord): GuestDraft {
   return {
@@ -60,12 +71,26 @@ function createDraft(guest: GuestRecord): GuestDraft {
         : guest.mainGuestConfirmed === false
           ? "declined"
           : "pending",
-    additionalGuestsJson: stringifyJson(guest.additionalGuests),
+    additionalGuests:
+      guest.additionalGuests?.map((additionalGuest) => ({
+        name: additionalGuest.name,
+        confirmed:
+          additionalGuest.confirmed === true
+            ? "confirmed"
+            : additionalGuest.confirmed === false
+              ? "declined"
+              : "pending",
+        confirmedAt: additionalGuest.confirmedAt ?? "",
+      })) ?? [],
     preferredName: guest.notesForAI?.preferredName ?? "",
     relationshipToCouple: guest.notesForAI?.relationshipToCouple ?? "",
-    languageMode: guest.notesForAI?.languageMode ?? "unset",
+    languageMode: guest.notesForAI?.languageMode ?? "",
     communicationStyle: guest.notesForAI?.communicationStyle ?? "",
-    plusOneNamesJson: stringifyJson(guest.notesForAI?.plusOneNames),
+    plusOneNames:
+      guest.notesForAI?.plusOneNames?.map((plusOne) => ({
+        name: plusOne.name,
+        relationshipToGuest: plusOne.relationshipToGuest,
+      })) ?? [],
     memoryNotes: guest.notesForAI?.memoryNotes ?? "",
     sensitiveNotes: guest.notesForAI?.sensitiveNotes ?? "",
     lastInteractionSummary: guest.notesForAI?.lastInteractionSummary ?? "",
@@ -85,31 +110,11 @@ function statusLabel(guest: GuestRecord) {
   return "Pending";
 }
 
-function parseJsonArray<T>(value: string, label: string): T[] | undefined {
-  const trimmed = value.trim();
-
-  if (!trimmed) {
-    return undefined;
-  }
-
-  let parsed: unknown;
-
-  try {
-    parsed = JSON.parse(trimmed);
-  } catch {
-    throw new Error(`${label} must be valid JSON.`);
-  }
-
-  if (!Array.isArray(parsed)) {
-    throw new Error(`${label} must be a JSON array.`);
-  }
-
-  return parsed as T[];
-}
-
 export default function AdminGuestDashboard() {
   const guests = useQuery(api.admin.listGuests, {});
-  const [selectedGuestId, setSelectedGuestId] = useState<GuestRecord["_id"] | null>(null);
+  const [selectedGuestId, setSelectedGuestId] = useState<
+    GuestRecord["_id"] | null
+  >(null);
   const [search, setSearch] = useState("");
 
   const filteredGuests = useMemo(() => {
@@ -144,13 +149,17 @@ export default function AdminGuestDashboard() {
   const activeGuestId = selectedGuest?._id ?? null;
 
   if (guests === undefined) {
-    return <div className="p-6 text-sm text-muted-foreground">Loading guests...</div>;
+    return (
+      <div className="p-6 text-sm text-muted-foreground">Loading guests...</div>
+    );
   }
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-8 md:px-6">
       <div className="space-y-2">
-        <h1 className="text-4xl font-semibold tracking-tight">Guest dashboard</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">
+          Guest dashboard
+        </h1>
         <p className="text-sm text-muted-foreground">
           Minimal admin view for guest values and AI notes.
         </p>
@@ -185,7 +194,13 @@ export default function AdminGuestDashboard() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">{guest.mainGuestName}</span>
-                    <Badge variant={guest.mainGuestConfirmed === true ? "default" : "outline"}>
+                    <Badge
+                      variant={
+                        guest.mainGuestConfirmed === true
+                          ? "default"
+                          : "outline"
+                      }
+                    >
                       {statusLabel(guest)}
                     </Badge>
                   </div>
@@ -202,14 +217,18 @@ export default function AdminGuestDashboard() {
 
         <Card className="border-stone-300/80 bg-white/90 backdrop-blur">
           <CardHeader>
-            <CardTitle>{selectedGuest?.mainGuestName ?? "Select a guest"}</CardTitle>
+            <CardTitle>
+              {selectedGuest?.mainGuestName ?? "Select a guest"}
+            </CardTitle>
             <CardDescription>
               Edit guest values and the notes used by the AI prompt.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
             {!selectedGuest ? (
-              <div className="text-sm text-muted-foreground">No guest selected.</div>
+              <div className="text-sm text-muted-foreground">
+                No guest selected.
+              </div>
             ) : (
               <GuestEditor key={selectedGuest._id} guest={selectedGuest} />
             )}
@@ -227,7 +246,10 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function updateDraft<K extends keyof GuestDraft>(key: K, value: GuestDraft[K]) {
+  function updateDraft<K extends keyof GuestDraft>(
+    key: K,
+    value: GuestDraft[K],
+  ) {
     setDraft((current) => ({ ...current, [key]: value }));
     setFeedback(null);
     setError(null);
@@ -237,27 +259,23 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
     setFeedback(null);
     setError(null);
 
-    let additionalGuests:
-      | {
-          name: string;
-          confirmed?: boolean;
-          confirmedAt?: string;
-        }[]
-      | undefined;
-    let plusOneNames:
-      | {
-          name: string;
-          relationshipToGuest: string;
-        }[]
-      | undefined;
+    const additionalGuests = draft.additionalGuests
+      .map((additionalGuest) => ({
+        name: additionalGuest.name.trim(),
+        confirmed:
+          additionalGuest.confirmed === "pending"
+            ? undefined
+            : additionalGuest.confirmed === "confirmed",
+        confirmedAt: additionalGuest.confirmedAt.trim() || undefined,
+      }))
+      .filter((additionalGuest) => additionalGuest.name);
 
-    try {
-      additionalGuests = parseJsonArray(draft.additionalGuestsJson, "Additional guests");
-      plusOneNames = parseJsonArray(draft.plusOneNamesJson, "Plus-one names");
-    } catch (parseError) {
-      setError(parseError instanceof Error ? parseError.message : "Unable to parse JSON.");
-      return;
-    }
+    const plusOneNames = draft.plusOneNames
+      .map((plusOne) => ({
+        name: plusOne.name.trim(),
+        relationshipToGuest: plusOne.relationshipToGuest.trim(),
+      }))
+      .filter((plusOne) => plusOne.name || plusOne.relationshipToGuest);
 
     startTransition(async () => {
       try {
@@ -273,14 +291,14 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
             draft.mainGuestConfirmed === "pending"
               ? undefined
               : draft.mainGuestConfirmed === "confirmed",
-          additionalGuests,
+          additionalGuests:
+            additionalGuests.length > 0 ? additionalGuests : undefined,
           notesForAI: {
             preferredName: draft.preferredName || undefined,
             relationshipToCouple: draft.relationshipToCouple || undefined,
-            languageMode:
-              draft.languageMode === "unset" ? undefined : draft.languageMode,
+            languageMode: draft.languageMode || undefined,
             communicationStyle: draft.communicationStyle || undefined,
-            plusOneNames,
+            plusOneNames: plusOneNames.length > 0 ? plusOneNames : undefined,
             memoryNotes: draft.memoryNotes || undefined,
             sensitiveNotes: draft.sensitiveNotes || undefined,
             lastInteractionSummary: draft.lastInteractionSummary || undefined,
@@ -290,9 +308,87 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
 
         setFeedback("Saved.");
       } catch (saveError) {
-        setError(saveError instanceof Error ? saveError.message : "Save failed.");
+        setError(
+          saveError instanceof Error ? saveError.message : "Save failed.",
+        );
       }
     });
+  }
+
+  function updateAdditionalGuest(
+    index: number,
+    key: keyof AdditionalGuestDraft,
+    value: AdditionalGuestDraft[keyof AdditionalGuestDraft],
+  ) {
+    setDraft((current) => ({
+      ...current,
+      additionalGuests: current.additionalGuests.map((guest, guestIndex) =>
+        guestIndex === index ? { ...guest, [key]: value } : guest,
+      ),
+    }));
+    setFeedback(null);
+    setError(null);
+  }
+
+  function addAdditionalGuest() {
+    setDraft((current) => ({
+      ...current,
+      additionalGuests: [
+        ...current.additionalGuests,
+        { name: "", confirmed: "pending", confirmedAt: "" },
+      ],
+    }));
+    setFeedback(null);
+    setError(null);
+  }
+
+  function removeAdditionalGuest(index: number) {
+    setDraft((current) => ({
+      ...current,
+      additionalGuests: current.additionalGuests.filter(
+        (_, guestIndex) => guestIndex !== index,
+      ),
+    }));
+    setFeedback(null);
+    setError(null);
+  }
+
+  function updatePlusOneName(
+    index: number,
+    key: keyof PlusOneNameDraft,
+    value: PlusOneNameDraft[keyof PlusOneNameDraft],
+  ) {
+    setDraft((current) => ({
+      ...current,
+      plusOneNames: current.plusOneNames.map((plusOne, plusOneIndex) =>
+        plusOneIndex === index ? { ...plusOne, [key]: value } : plusOne,
+      ),
+    }));
+    setFeedback(null);
+    setError(null);
+  }
+
+  function addPlusOneName() {
+    setDraft((current) => ({
+      ...current,
+      plusOneNames: [
+        ...current.plusOneNames,
+        { name: "", relationshipToGuest: "" },
+      ],
+    }));
+    setFeedback(null);
+    setError(null);
+  }
+
+  function removePlusOneName(index: number) {
+    setDraft((current) => ({
+      ...current,
+      plusOneNames: current.plusOneNames.filter(
+        (_, plusOneIndex) => plusOneIndex !== index,
+      ),
+    }));
+    setFeedback(null);
+    setError(null);
   }
 
   return (
@@ -340,9 +436,9 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
         <div className="md:col-span-2">
           <Select
             value={draft.mainGuestConfirmed}
-            onValueChange={(
-              value: GuestDraft["mainGuestConfirmed"],
-            ) => updateDraft("mainGuestConfirmed", value)}
+            onValueChange={(value: GuestDraft["mainGuestConfirmed"]) =>
+              updateDraft("mainGuestConfirmed", value)
+            }
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="RSVP status" />
@@ -355,14 +451,73 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
           </Select>
         </div>
         <div className="md:col-span-2">
-          <label className="mb-2 block text-sm font-medium">Additional guests JSON</label>
-          <Textarea
-            value={draft.additionalGuestsJson}
-            onChange={(event) =>
-              updateDraft("additionalGuestsJson", event.target.value)
-            }
-            className="min-h-40 font-mono text-xs"
-          />
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <label className="block text-sm font-medium">Additional guests</label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addAdditionalGuest}
+            >
+              Add guest
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {draft.additionalGuests.length ? (
+              draft.additionalGuests.map((additionalGuest, index) => (
+                <div
+                  key={`${guest._id}-additional-${index}`}
+                  className="grid gap-3 rounded-lg border border-stone-200 p-3 md:grid-cols-[minmax(0,1.4fr)_180px_minmax(0,1fr)_auto]"
+                >
+                  <Input
+                    value={additionalGuest.name}
+                    onChange={(event) =>
+                      updateAdditionalGuest(index, "name", event.target.value)
+                    }
+                    placeholder="Guest name"
+                  />
+                  <Select
+                    value={additionalGuest.confirmed}
+                    onValueChange={(
+                      value: AdditionalGuestDraft["confirmed"],
+                    ) => updateAdditionalGuest(index, "confirmed", value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="RSVP status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="declined">Declined</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={additionalGuest.confirmedAt}
+                    onChange={(event) =>
+                      updateAdditionalGuest(
+                        index,
+                        "confirmedAt",
+                        event.target.value,
+                      )
+                    }
+                    placeholder="Confirmed at (optional)"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeAdditionalGuest(index)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">
+                No additional guests.
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -380,16 +535,15 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
           placeholder="Relationship to couple"
         />
         <Select
-          value={draft.languageMode}
-          onValueChange={(
-            value: GuestDraft["languageMode"],
-          ) => updateDraft("languageMode", value)}
+          value={draft.languageMode || undefined}
+          onValueChange={(value: GuestDraft["languageMode"]) =>
+            updateDraft("languageMode", value)
+          }
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="AI language mode" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="unset">Unset</SelectItem>
             <SelectItem value="english">English</SelectItem>
             <SelectItem value="arabic">Arabic</SelectItem>
             <SelectItem value="franco">Franco</SelectItem>
@@ -403,14 +557,58 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
           placeholder="Communication style"
         />
         <div className="md:col-span-2">
-          <label className="mb-2 block text-sm font-medium">Plus-one names JSON</label>
-          <Textarea
-            value={draft.plusOneNamesJson}
-            onChange={(event) =>
-              updateDraft("plusOneNamesJson", event.target.value)
-            }
-            className="min-h-32 font-mono text-xs"
-          />
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <label className="block text-sm font-medium">Plus-one names</label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addPlusOneName}
+            >
+              Add plus-one
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {draft.plusOneNames.length ? (
+              draft.plusOneNames.map((plusOne, index) => (
+                <div
+                  key={`${guest._id}-plus-one-${index}`}
+                  className="grid gap-3 rounded-lg border border-stone-200 p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                >
+                  <Input
+                    value={plusOne.name}
+                    onChange={(event) =>
+                      updatePlusOneName(index, "name", event.target.value)
+                    }
+                    placeholder="Name"
+                  />
+                  <Input
+                    value={plusOne.relationshipToGuest}
+                    onChange={(event) =>
+                      updatePlusOneName(
+                        index,
+                        "relationshipToGuest",
+                        event.target.value,
+                      )
+                    }
+                    placeholder="Relationship to guest"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removePlusOneName(index)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">
+                No plus-one names.
+              </div>
+            )}
+          </div>
         </div>
         <div className="md:col-span-2">
           <label className="mb-2 block text-sm font-medium">Memory notes</label>
@@ -420,14 +618,20 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
           />
         </div>
         <div className="md:col-span-2">
-          <label className="mb-2 block text-sm font-medium">Sensitive notes</label>
+          <label className="mb-2 block text-sm font-medium">
+            Sensitive notes
+          </label>
           <Textarea
             value={draft.sensitiveNotes}
-            onChange={(event) => updateDraft("sensitiveNotes", event.target.value)}
+            onChange={(event) =>
+              updateDraft("sensitiveNotes", event.target.value)
+            }
           />
         </div>
         <div className="md:col-span-2">
-          <label className="mb-2 block text-sm font-medium">Last interaction summary</label>
+          <label className="mb-2 block text-sm font-medium">
+            Last interaction summary
+          </label>
           <Textarea
             value={draft.lastInteractionSummary}
             onChange={(event) =>
@@ -451,9 +655,7 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
         {feedback ? (
           <span className="text-sm text-emerald-700">{feedback}</span>
         ) : null}
-        {error ? (
-          <span className="text-sm text-red-700">{error}</span>
-        ) : null}
+        {error ? <span className="text-sm text-red-700">{error}</span> : null}
       </div>
     </>
   );
