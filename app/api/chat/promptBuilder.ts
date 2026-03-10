@@ -8,6 +8,13 @@ interface GuestContext {
   languageMode?: LanguageMode;
   communicationStyle?: string;
   rsvpStatus?: RSVPStatus;
+  mainGuestConfirmed?: boolean;
+  plusOneName?: string;
+  additionalGuests?: Array<{
+    name: string;
+    confirmed?: boolean;
+    confirmedAt?: string;
+  }>;
   plusOneNames?: Array<{ name: string; relationshipToGuest: string }>;
   memoryNotes?: string;
   sensitiveNotes?: string;
@@ -16,7 +23,7 @@ interface GuestContext {
 }
 
 const event = {
-  weddingDate: "Saturday, April 16, 2026 at 6:00 PM",
+  weddingDate: "Saturday, April 18, 2026 at 6:00 PM",
   groomName: "Mohamed Raafat (Aka Raafat)",
   brideName: "Habiba Mahmoud",
   venueName: "Aurora Lounge",
@@ -29,6 +36,8 @@ const event = {
   ceremonyTime: "6:00 PM",
   timezone: "UTC+02:00",
   dressCode: "formal",
+  dressCodeNotes:
+    "The dress code is formal. For men, please wear a suit and tie. No color restrictions. For women, please wear a dress and try to be sparkly. You cant wear white or gold colors.",
   plusOnePolicy: "Yes",
   childrenPolicy: "No",
   coordinatorName: "Mohamed Raafat (Aka Raafat)",
@@ -57,7 +66,7 @@ export function buildZainPrompt(guest: GuestContext): string {
     ].join(" "),
     arabic: [
       "Speak in natural, warm Arabic.",
-      "Use clear modern Egyptian Arabic unless the guest's prior messages indicate a",
+      "Use clear modern Egyptian Arabic.",
       "specific dialect preference.",
       "Keep the tone friendly, elegant, and easy to reply to.",
     ].join(" "),
@@ -65,6 +74,7 @@ export function buildZainPrompt(guest: GuestContext): string {
       "Speak in natural Franco Arabic using Latin characters.",
       "Write the way a real person would text casually and clearly.",
       "Avoid overdoing numbers or stylized spelling; optimize for readability.",
+      "Reduce english words when speaking to a franco guest, but dont avoid using them completely.",
       "If the guest switches to Arabic script or English, mirror them.",
     ].join(" "),
   };
@@ -151,6 +161,7 @@ ${toBulletList([
   `Ceremony time: ${event.ceremonyTime}`,
   `Timezone: ${event.timezone}`,
   `Dress code: ${event.dressCode}`,
+  `Dress code notes: ${event.dressCodeNotes}`,
   `Plus-one policy: ${event.plusOnePolicy}`,
   `Children policy: ${event.childrenPolicy}`,
   `Coordinator: ${event.coordinatorName}`,
@@ -169,6 +180,21 @@ ${toBulletList([
     ? `Communication style: ${guest.communicationStyle}`
     : undefined,
   guest.rsvpStatus ? `RSVP status: ${guest.rsvpStatus}` : undefined,
+  `Main guest confirmed: ${boolText(guest.mainGuestConfirmed)}`,
+  guest.plusOneName ? `Plus-one name: ${guest.plusOneName}` : undefined,
+  guest.additionalGuests?.length
+    ? `Additional guests: ${guest.additionalGuests
+        .map((additionalGuest) => {
+          const status =
+            additionalGuest.confirmed === undefined
+              ? "confirmation unknown"
+              : additionalGuest.confirmed
+                ? "confirmed"
+                : "declined";
+          return `${additionalGuest.name} (${status})`;
+        })
+        .join(", ")}`
+    : undefined,
   guest.plusOneNames
     ? `Plus-one names: ${guest.plusOneNames.map((plusOne) => `${plusOne.name} (${plusOne.relationshipToGuest})`).join(", ")}`
     : undefined,

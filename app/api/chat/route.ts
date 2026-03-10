@@ -95,6 +95,15 @@ export async function POST(req: Request) {
   const result = await generateText({
     system: buildZainPrompt({
       guestName: guest.mainGuestName,
+      rsvpStatus:
+        guest.mainGuestConfirmed === undefined
+          ? "unknown"
+          : guest.mainGuestConfirmed
+            ? "attending"
+            : "declined",
+      mainGuestConfirmed: guest.mainGuestConfirmed,
+      plusOneName: guest.plusOneName,
+      additionalGuests: guest.additionalGuests,
       ...guest.notesForAI,
     }),
     model: google("gemini-3-flash-preview"),
