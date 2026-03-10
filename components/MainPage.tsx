@@ -5,7 +5,7 @@ import TopText from "@/components/TopText";
 import LocationLink from "@/components/LocationLink";
 import RSVP from "@/components/RSVP";
 import Decorations from "./Decoration";
-import { ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, MessageCircle } from "lucide-react";
 
 type MainPageProps = {
   slug?: string;
@@ -39,6 +39,15 @@ export default function MainPage({
         More Details
         <ChevronRightIcon className="size-4" />
       </button>
+      <a
+        href="https://wa.me/14155238886?text=Hi%20I%20need%20some%20help"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative z-20 mt-3 flex cursor-pointer items-center gap-1.5 text-sm font-medium tracking-wide text-[#834213]/70 transition-colors hover:text-[#25D366]"
+      >
+        <MessageCircle className="size-4" />
+        Need help?
+      </a>
     </Decorations>
   );
 }
