@@ -99,6 +99,63 @@ export const listGuests = query({
   },
 });
 
+export const createGuest = mutation({
+  args: {
+    mainGuestName: v.string(),
+    mainGuestConfirmed: v.optional(v.boolean()),
+    plusOneName: v.optional(v.string()),
+    additionalGuests: v.optional(additionalGuestValidator),
+    slug: v.string(),
+    email: v.optional(v.string()),
+    phone: v.string(),
+    preferedLanguage: v.union(v.literal("en"), v.literal("ar")),
+    notesForAI: v.optional(notesForAiValidator),
+  },
+  handler: async (ctx, args) => {
+    const slug = args.slug.trim();
+
+    if (!args.mainGuestName.trim()) {
+      throw new Error("Main guest name is required.");
+    }
+
+    if (!slug) {
+      throw new Error("Slug is required.");
+    }
+
+    if (!args.phone.trim()) {
+      throw new Error("Phone is required.");
+    }
+
+    const existingGuest = await ctx.db
+      .query("guests")
+      .withIndex("by_slug", (q) => q.eq("slug", slug))
+      .first();
+
+    if (existingGuest) {
+      throw new Error("A guest with this slug already exists.");
+    }
+
+    return await ctx.db.insert("guests", {
+      mainGuestName: args.mainGuestName.trim(),
+      mainGuestConfirmed: args.mainGuestConfirmed,
+      plusOneName: normalizeOptionalString(args.plusOneName),
+      additionalGuests:
+        args.additionalGuests && args.additionalGuests.length > 0
+          ? args.additionalGuests.map((guest) => ({
+              name: guest.name.trim(),
+              confirmed: guest.confirmed,
+              confirmedAt: normalizeOptionalString(guest.confirmedAt),
+            }))
+          : undefined,
+      slug,
+      email: normalizeOptionalString(args.email),
+      phone: args.phone.trim(),
+      preferedLanguage: args.preferedLanguage,
+      notesForAI: normalizeNotes(args.notesForAI),
+    });
+  },
+});
+
 export const updateGuest = mutation({
   args: {
     guestId: v.id("guests"),

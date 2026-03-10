@@ -36,7 +36,7 @@ type PlusOneNameDraft = {
   relationshipToGuest: string;
 };
 type GuestDraft = {
-  guestId: GuestRecord["_id"];
+  guestId?: GuestRecord["_id"];
   mainGuestName: string;
   slug: string;
   phone: string;
@@ -55,6 +55,28 @@ type GuestDraft = {
   lastInteractionSummary: string;
   extraNotes: string;
 };
+
+function createEmptyDraft(): GuestDraft {
+  return {
+    mainGuestName: "",
+    slug: "",
+    phone: "",
+    email: "",
+    plusOneName: "",
+    preferedLanguage: "en",
+    mainGuestConfirmed: "pending",
+    additionalGuests: [],
+    preferredName: "",
+    relationshipToCouple: "",
+    languageMode: "",
+    communicationStyle: "",
+    plusOneNames: [],
+    memoryNotes: "",
+    sensitiveNotes: "",
+    lastInteractionSummary: "",
+    extraNotes: "",
+  };
+}
 
 function createDraft(guest: GuestRecord): GuestDraft {
   return {
@@ -112,6 +134,7 @@ function statusLabel(guest: GuestRecord) {
 
 export default function AdminGuestDashboard() {
   const guests = useQuery(api.admin.listGuests, {});
+  const [isCreatingGuest, setIsCreatingGuest] = useState(false);
   const [selectedGuestId, setSelectedGuestId] = useState<
     GuestRecord["_id"] | null
   >(null);
@@ -142,9 +165,11 @@ export default function AdminGuestDashboard() {
   }, [guests, search]);
 
   const selectedGuest =
-    guests?.find((guest) => guest._id === selectedGuestId) ??
-    filteredGuests[0] ??
-    guests?.[0] ??
+    isCreatingGuest
+      ? null
+      : guests?.find((guest) => guest._id === selectedGuestId) ??
+        filteredGuests[0] ??
+        guests?.[0] ??
     null;
   const activeGuestId = selectedGuest?._id ?? null;
 
@@ -170,6 +195,16 @@ export default function AdminGuestDashboard() {
           <CardHeader>
             <CardTitle>Guests</CardTitle>
             <CardDescription>{guests.length} total records</CardDescription>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsCreatingGuest(true);
+                setSelectedGuestId(null);
+              }}
+            >
+              New guest
+            </Button>
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -183,6 +218,7 @@ export default function AdminGuestDashboard() {
                   key={guest._id}
                   type="button"
                   onClick={() => {
+                    setIsCreatingGuest(false);
                     setSelectedGuestId(guest._id);
                   }}
                   className={cn(
@@ -218,19 +254,37 @@ export default function AdminGuestDashboard() {
         <Card className="border-stone-300/80 bg-white/90 backdrop-blur">
           <CardHeader>
             <CardTitle>
-              {selectedGuest?.mainGuestName ?? "Select a guest"}
+              {isCreatingGuest
+                ? "New guest"
+                : selectedGuest?.mainGuestName ?? "Select a guest"}
             </CardTitle>
             <CardDescription>
-              Edit guest values and the notes used by the AI prompt.
+              {isCreatingGuest
+                ? "Create a guest record and optional AI notes."
+                : "Edit guest values and the notes used by the AI prompt."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
-            {!selectedGuest ? (
+            {isCreatingGuest ? (
+              <GuestEditor
+                mode="create"
+                initialDraft={createEmptyDraft()}
+                onCreated={(guestId) => {
+                  setIsCreatingGuest(false);
+                  setSelectedGuestId(guestId);
+                }}
+                onCancel={() => setIsCreatingGuest(false)}
+              />
+            ) : !selectedGuest ? (
               <div className="text-sm text-muted-foreground">
                 No guest selected.
               </div>
             ) : (
-              <GuestEditor key={selectedGuest._id} guest={selectedGuest} />
+              <GuestEditor
+                key={selectedGuest._id}
+                mode="edit"
+                initialDraft={createDraft(selectedGuest)}
+              />
             )}
           </CardContent>
         </Card>
@@ -239,12 +293,24 @@ export default function AdminGuestDashboard() {
   );
 }
 
-function GuestEditor({ guest }: { guest: GuestRecord }) {
+function GuestEditor({
+  initialDraft,
+  mode,
+  onCreated,
+  onCancel,
+}: {
+  initialDraft: GuestDraft;
+  mode: "create" | "edit";
+  onCreated?: (guestId: GuestRecord["_id"]) => void;
+  onCancel?: () => void;
+}) {
+  const createGuest = useMutation(api.admin.createGuest);
   const updateGuest = useMutation(api.admin.updateGuest);
-  const [draft, setDraft] = useState<GuestDraft>(() => createDraft(guest));
+  const [draft, setDraft] = useState<GuestDraft>(() => initialDraft);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const rowKeyPrefix = draft.guestId ?? "new-guest";
 
   function updateDraft<K extends keyof GuestDraft>(
     key: K,
@@ -279,8 +345,7 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
 
     startTransition(async () => {
       try {
-        await updateGuest({
-          guestId: draft.guestId,
+        const payload = {
           mainGuestName: draft.mainGuestName,
           slug: draft.slug,
           phone: draft.phone,
@@ -304,6 +369,22 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
             lastInteractionSummary: draft.lastInteractionSummary || undefined,
             extraNotes: draft.extraNotes || undefined,
           },
+        };
+
+        if (mode === "create") {
+          const guestId = await createGuest(payload);
+          setFeedback("Guest created.");
+          onCreated?.(guestId);
+          return;
+        }
+
+        if (!draft.guestId) {
+          throw new Error("Guest ID is missing.");
+        }
+
+        await updateGuest({
+          guestId: draft.guestId,
+          ...payload,
         });
 
         setFeedback("Saved.");
@@ -466,7 +547,7 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
             {draft.additionalGuests.length ? (
               draft.additionalGuests.map((additionalGuest, index) => (
                 <div
-                  key={`${guest._id}-additional-${index}`}
+                  key={`${rowKeyPrefix}-additional-${index}`}
                   className="grid gap-3 rounded-lg border border-stone-200 p-3 md:grid-cols-[minmax(0,1.4fr)_180px_minmax(0,1fr)_auto]"
                 >
                   <Input
@@ -572,7 +653,7 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
             {draft.plusOneNames.length ? (
               draft.plusOneNames.map((plusOne, index) => (
                 <div
-                  key={`${guest._id}-plus-one-${index}`}
+                  key={`${rowKeyPrefix}-plus-one-${index}`}
                   className="grid gap-3 rounded-lg border border-stone-200 p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
                 >
                   <Input
@@ -650,8 +731,13 @@ function GuestEditor({ guest }: { guest: GuestRecord }) {
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" onClick={handleSave} disabled={isPending}>
-          {isPending ? "Saving..." : "Save guest"}
+          {isPending ? (mode === "create" ? "Creating..." : "Saving...") : mode === "create" ? "Create guest" : "Save guest"}
         </Button>
+        {mode === "create" ? (
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>
+            Cancel
+          </Button>
+        ) : null}
         {feedback ? (
           <span className="text-sm text-emerald-700">{feedback}</span>
         ) : null}
