@@ -35,6 +35,8 @@ type PlusOneNameDraft = {
   name: string;
   relationshipToGuest: string;
 };
+type ConversationRecord = Doc<"conversations">;
+type MessageRecord = Doc<"messages">;
 type GuestDraft = {
   guestId?: GuestRecord["_id"];
   mainGuestName: string;
@@ -120,6 +122,117 @@ function statusLabel(guest: GuestRecord) {
   return "Pending";
 }
 
+const INITIATION_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function getLatestUserMessageAt(messages: MessageRecord[] | undefined) {
+  return (
+    messages
+      ?.filter((message) => message.role === "user")
+      .reduce<
+        number | null
+      >((latest, message) => (latest === null || message._creationTime > latest ? message._creationTime : latest), null) ??
+    null
+  );
+}
+
+function canInitiateConversation(
+  conversation: ConversationRecord | null | undefined,
+  messages: MessageRecord[] | undefined,
+) {
+  if (!conversation) {
+    return true;
+  }
+
+  const latestUserMessageAt = getLatestUserMessageAt(messages);
+
+  if (latestUserMessageAt === null) {
+    return true;
+  }
+
+  return Date.now() - latestUserMessageAt >= INITIATION_WINDOW_MS;
+}
+
+function InitiateConversationButton({
+  guest,
+  variant = "outline",
+  size = "sm",
+  className,
+}: {
+  guest: GuestRecord;
+  variant?: "default" | "outline" | "ghost";
+  size?: "default" | "sm" | "lg" | "icon";
+  className?: string;
+}) {
+  const conversation = useQuery(api.conversations.getByGuestId, {
+    guestId: guest._id,
+  });
+  const messages = useQuery(
+    api.conversations.listMessages,
+    conversation?._id ? { conversationId: conversation._id } : "skip",
+  );
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  if (!canInitiateConversation(conversation, messages)) {
+    return null;
+  }
+
+  function handleInitiate() {
+    setFeedback(null);
+    setError(null);
+
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/chat/initiate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            guestId: guest._id,
+          }),
+        });
+
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+          message?: string;
+        } | null;
+
+        if (!response.ok) {
+          throw new Error(payload?.error ?? "Failed to initiate conversation.");
+        }
+
+        setFeedback(payload?.message ?? "Template sent.");
+      } catch (sendError) {
+        setError(
+          sendError instanceof Error
+            ? sendError.message
+            : "Failed to initiate conversation.",
+        );
+      }
+    });
+  }
+
+  return (
+    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+      <Button
+        type="button"
+        variant={variant}
+        size={size}
+        onClick={handleInitiate}
+        disabled={isPending}
+      >
+        {isPending ? "Sending..." : "Initiate conversation"}
+      </Button>
+      {feedback ? (
+        <span className="text-xs text-emerald-700">{feedback}</span>
+      ) : null}
+      {error ? <span className="text-xs text-red-700">{error}</span> : null}
+    </div>
+  );
+}
+
 export default function AdminGuestDashboard() {
   const guests = useQuery(api.admin.listGuests, {});
   const [isCreatingGuest, setIsCreatingGuest] = useState(false);
@@ -201,34 +314,45 @@ export default function AdminGuestDashboard() {
           <CardContent className="space-y-2">
             {filteredGuests.length ? (
               filteredGuests.map((guest) => (
-                <button
+                <div
                   key={guest._id}
-                  type="button"
-                  onClick={() => {
-                    setIsCreatingGuest(false);
-                    setSelectedGuestId(guest._id);
-                  }}
                   className={cn(
-                    "w-full rounded-lg border px-3 py-3 text-left transition-colors",
+                    "rounded-lg border px-3 py-3 transition-colors",
                     guest._id === activeGuestId
                       ? "border-stone-900 bg-stone-950 text-stone-50"
                       : "border-stone-200 bg-stone-50 hover:bg-stone-100",
                   )}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{guest.mainGuestName}</span>
-                    <Badge
-                      variant={
-                        guest.mainGuestConfirmed === true
-                          ? "default"
-                          : "outline"
-                      }
-                    >
-                      {statusLabel(guest)}
-                    </Badge>
-                  </div>
-                  <div className="mt-1 text-xs opacity-75">{guest.slug}</div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatingGuest(false);
+                      setSelectedGuestId(guest._id);
+                    }}
+                    className="w-full text-left"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{guest.mainGuestName}</span>
+                      <Badge
+                        variant={
+                          guest.mainGuestConfirmed === true
+                            ? "default"
+                            : "outline"
+                        }
+                      >
+                        {statusLabel(guest)}
+                      </Badge>
+                    </div>
+                    <div className="mt-1 text-xs opacity-75">{guest.slug}</div>
+                  </button>
+                  <InitiateConversationButton
+                    guest={guest}
+                    className="mt-3"
+                    variant={
+                      guest._id === activeGuestId ? "default" : "outline"
+                    }
+                  />
+                </div>
               ))
             ) : (
               <div className="rounded-lg border border-dashed px-3 py-6 text-sm text-muted-foreground">
@@ -267,11 +391,14 @@ export default function AdminGuestDashboard() {
                 No guest selected.
               </div>
             ) : (
-              <GuestEditor
-                key={selectedGuest._id}
-                mode="edit"
-                initialDraft={createDraft(selectedGuest)}
-              />
+              <>
+                <InitiateConversationButton guest={selectedGuest} />
+                <GuestEditor
+                  key={selectedGuest._id}
+                  mode="edit"
+                  initialDraft={createDraft(selectedGuest)}
+                />
+              </>
             )}
           </CardContent>
         </Card>
