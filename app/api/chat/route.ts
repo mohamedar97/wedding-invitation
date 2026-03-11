@@ -3,7 +3,7 @@ import { openai } from "@ai-sdk/openai";
 import { api } from "@/convex/_generated/api";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { NextResponse } from "next/server";
-import { buildZainPrompt } from "./promptBuilder";
+import { buildZaynPrompt } from "./promptBuilder";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -81,21 +81,26 @@ export async function POST(req: Request) {
     ...storedMessages,
     { role: "user", content: messageBody },
   ];
+  const languageMode =
+    guest.notesForAI?.languageMode ??
+    (guest.preferedLanguage === "ar" ? "arabic" : "english");
+  const systemPrompt = buildZaynPrompt({
+    guestName: guest.mainGuestName,
+    rsvpStatus:
+      guest.mainGuestConfirmed === undefined
+        ? "unknown"
+        : guest.mainGuestConfirmed
+          ? "attending"
+          : "declined",
+    mainGuestConfirmed: guest.mainGuestConfirmed,
+    plusOneName: guest.plusOneName,
+    additionalGuests: guest.additionalGuests,
+    ...guest.notesForAI,
+    languageMode,
+  });
 
   const result = await generateText({
-    system: buildZainPrompt({
-      guestName: guest.mainGuestName,
-      rsvpStatus:
-        guest.mainGuestConfirmed === undefined
-          ? "unknown"
-          : guest.mainGuestConfirmed
-            ? "attending"
-            : "declined",
-      mainGuestConfirmed: guest.mainGuestConfirmed,
-      plusOneName: guest.plusOneName,
-      additionalGuests: guest.additionalGuests,
-      ...guest.notesForAI,
-    }),
+    system: systemPrompt,
     model: openai("gpt-5.4"),
     messages: conversationHistory,
   });

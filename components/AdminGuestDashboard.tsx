@@ -50,9 +50,6 @@ type GuestDraft = {
   languageMode: "" | "english" | "arabic" | "franco";
   communicationStyle: string;
   plusOneNames: PlusOneNameDraft[];
-  memoryNotes: string;
-  sensitiveNotes: string;
-  lastInteractionSummary: string;
   extraNotes: string;
 };
 
@@ -71,9 +68,6 @@ function createEmptyDraft(): GuestDraft {
     languageMode: "",
     communicationStyle: "",
     plusOneNames: [],
-    memoryNotes: "",
-    sensitiveNotes: "",
-    lastInteractionSummary: "",
     extraNotes: "",
   };
 }
@@ -113,9 +107,6 @@ function createDraft(guest: GuestRecord): GuestDraft {
         name: plusOne.name,
         relationshipToGuest: plusOne.relationshipToGuest,
       })) ?? [],
-    memoryNotes: guest.notesForAI?.memoryNotes ?? "",
-    sensitiveNotes: guest.notesForAI?.sensitiveNotes ?? "",
-    lastInteractionSummary: guest.notesForAI?.lastInteractionSummary ?? "",
     extraNotes: guest.notesForAI?.extraNotes ?? "",
   };
 }
@@ -164,13 +155,12 @@ export default function AdminGuestDashboard() {
     );
   }, [guests, search]);
 
-  const selectedGuest =
-    isCreatingGuest
-      ? null
-      : guests?.find((guest) => guest._id === selectedGuestId) ??
-        filteredGuests[0] ??
-        guests?.[0] ??
-    null;
+  const selectedGuest = isCreatingGuest
+    ? null
+    : (guests?.find((guest) => guest._id === selectedGuestId) ??
+      filteredGuests[0] ??
+      guests?.[0] ??
+      null);
   const activeGuestId = selectedGuest?._id ?? null;
 
   if (guests === undefined) {
@@ -256,7 +246,7 @@ export default function AdminGuestDashboard() {
             <CardTitle>
               {isCreatingGuest
                 ? "New guest"
-                : selectedGuest?.mainGuestName ?? "Select a guest"}
+                : (selectedGuest?.mainGuestName ?? "Select a guest")}
             </CardTitle>
             <CardDescription>
               {isCreatingGuest
@@ -364,9 +354,6 @@ function GuestEditor({
             languageMode: draft.languageMode || undefined,
             communicationStyle: draft.communicationStyle || undefined,
             plusOneNames: plusOneNames.length > 0 ? plusOneNames : undefined,
-            memoryNotes: draft.memoryNotes || undefined,
-            sensitiveNotes: draft.sensitiveNotes || undefined,
-            lastInteractionSummary: draft.lastInteractionSummary || undefined,
             extraNotes: draft.extraNotes || undefined,
           },
         };
@@ -533,7 +520,9 @@ function GuestEditor({
         </div>
         <div className="md:col-span-2">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <label className="block text-sm font-medium">Additional guests</label>
+            <label className="block text-sm font-medium">
+              Additional guests
+            </label>
             <Button
               type="button"
               variant="outline"
@@ -559,9 +548,9 @@ function GuestEditor({
                   />
                   <Select
                     value={additionalGuest.confirmed}
-                    onValueChange={(
-                      value: AdditionalGuestDraft["confirmed"],
-                    ) => updateAdditionalGuest(index, "confirmed", value)}
+                    onValueChange={(value: AdditionalGuestDraft["confirmed"]) =>
+                      updateAdditionalGuest(index, "confirmed", value)
+                    }
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="RSVP status" />
@@ -694,8 +683,8 @@ function GuestEditor({
         <div className="md:col-span-2">
           <label className="mb-2 block text-sm font-medium">Memory notes</label>
           <Textarea
-            value={draft.memoryNotes}
-            onChange={(event) => updateDraft("memoryNotes", event.target.value)}
+            value={draft.extraNotes}
+            onChange={(event) => updateDraft("extraNotes", event.target.value)}
           />
         </div>
         <div className="md:col-span-2">
@@ -703,21 +692,8 @@ function GuestEditor({
             Sensitive notes
           </label>
           <Textarea
-            value={draft.sensitiveNotes}
-            onChange={(event) =>
-              updateDraft("sensitiveNotes", event.target.value)
-            }
-          />
-        </div>
-        <div className="md:col-span-2">
-          <label className="mb-2 block text-sm font-medium">
-            Last interaction summary
-          </label>
-          <Textarea
-            value={draft.lastInteractionSummary}
-            onChange={(event) =>
-              updateDraft("lastInteractionSummary", event.target.value)
-            }
+            value={draft.extraNotes}
+            onChange={(event) => updateDraft("extraNotes", event.target.value)}
           />
         </div>
         <div className="md:col-span-2">
@@ -731,10 +707,21 @@ function GuestEditor({
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" onClick={handleSave} disabled={isPending}>
-          {isPending ? (mode === "create" ? "Creating..." : "Saving...") : mode === "create" ? "Create guest" : "Save guest"}
+          {isPending
+            ? mode === "create"
+              ? "Creating..."
+              : "Saving..."
+            : mode === "create"
+              ? "Create guest"
+              : "Save guest"}
         </Button>
         {mode === "create" ? (
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            disabled={isPending}
+          >
             Cancel
           </Button>
         ) : null}
