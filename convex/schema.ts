@@ -48,15 +48,26 @@ export default defineSchema({
         extraNotes: v.optional(v.string()),
       }),
     ),
+    conversationId: v.optional(v.id("conversations")),
   })
     .index("by_slug", ["slug"])
     .index("by_phone", ["phone"]),
   conversations: defineTable({
     guestId: v.id("guests"),
+    lastBatchId: v.number(),
+    pendingBatchId: v.optional(v.number()),
+    pendingScheduleVersion: v.optional(v.number()),
+    pendingReplyStartedAt: v.optional(v.number()),
+    pendingReplyDueAt: v.optional(v.number()),
+    lastUserMessageAt: v.optional(v.number()),
+    processingBatchId: v.optional(v.number()),
+    processingScheduleVersion: v.optional(v.number()),
+    lastReplyError: v.optional(v.string()),
   }).index("by_guestId", ["guestId"]),
   messages: defineTable({
     conversationId: v.id("conversations"),
     role: v.union(v.literal("user"), v.literal("assistant")),
     content: v.string(),
+    batchId: v.optional(v.number()),
   }).index("by_conversationId", ["conversationId"]),
 });

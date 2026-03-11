@@ -1,26 +1,9 @@
-import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { api } from "@/convex/_generated/api";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { NextResponse } from "next/server";
-import { buildZaynPrompt } from "./promptBuilder";
 
-type ChatMessage = {
-  role: "user" | "assistant";
-  content: string;
-};
-
-function escapeXml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-function twimlMessage(message: string) {
-  return `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(message)}</Message></Response>`;
+function emptyTwimlResponse() {
+  return `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`;
 }
 
 function unauthorizedResponse() {
@@ -30,90 +13,47 @@ function unauthorizedResponse() {
 }
 
 export async function POST(req: Request) {
-  const formData = await req.formData();
-  const from = formData.get("From");
-  const incomingBody = formData.get("Body");
-  const phone = typeof from === "string" ? from.trim() : "";
-  const messageBody =
-    typeof incomingBody === "string" ? incomingBody.trim() : "";
+  try {
+    const formData = await req.formData();
+    const from = formData.get("From");
+    const incomingBody = formData.get("Body");
+    const phone = typeof from === "string" ? from.trim() : "";
+    const messageBody =
+      typeof incomingBody === "string" ? incomingBody.trim() : "";
 
-  if (!phone || !messageBody) {
-    return unauthorizedResponse();
-  }
+    if (!phone || !messageBody) {
+      console.warn("[chat webhook] rejected request with missing phone or body", {
+        phone,
+        hasMessageBody: Boolean(messageBody),
+      });
+      return unauthorizedResponse();
+    }
 
-  const guest = await fetchQuery(api.getGuests.getByPhone, { phone });
+    const guest = await fetchQuery(api.getGuests.getByPhone, { phone });
 
-  if (!guest) {
-    return unauthorizedResponse();
-  }
+    if (!guest) {
+      console.warn("[chat webhook] rejected unknown guest", { phone });
+      return unauthorizedResponse();
+    }
 
-  let conversation = await fetchQuery(api.conversations.getByGuestId, {
-    guestId: guest._id,
-  });
-
-  if (!conversation) {
-    const conversationId = await fetchMutation(api.conversations.create, {
+    await fetchMutation(api.conversations.receiveIncomingMessage, {
       guestId: guest._id,
+      content: messageBody,
     });
-    conversation = {
-      _id: conversationId,
+
+    console.info("[chat webhook] queued inbound message", {
       guestId: guest._id,
-      _creationTime: Date.now(),
-    };
+      phone,
+      messageLength: messageBody.length,
+    });
+
+    return new NextResponse(emptyTwimlResponse(), {
+      headers: {
+        "Content-Type": "text/xml; charset=utf-8",
+      },
+    });
+  } catch (error) {
+    console.error("[chat webhook] failed to queue inbound message", error);
+    throw error;
   }
-
-  const storedMessages = (
-    await fetchQuery(api.conversations.listMessages, {
-      conversationId: conversation._id,
-    })
-  ).map((message: { role: "user" | "assistant"; content: string }) => ({
-    role: message.role,
-    content: message.content,
-  }));
-
-  await fetchMutation(api.conversations.createMessage, {
-    conversationId: conversation._id,
-    role: "user",
-    content: messageBody,
-  });
-
-  const conversationHistory: ChatMessage[] = [
-    ...storedMessages,
-    { role: "user", content: messageBody },
-  ];
-  const languageMode =
-    guest.notesForAI?.languageMode ??
-    (guest.preferedLanguage === "ar" ? "arabic" : "english");
-  const systemPrompt = buildZaynPrompt({
-    guestName: guest.mainGuestName,
-    rsvpStatus:
-      guest.mainGuestConfirmed === undefined
-        ? "unknown"
-        : guest.mainGuestConfirmed
-          ? "attending"
-          : "declined",
-    mainGuestConfirmed: guest.mainGuestConfirmed,
-    plusOneName: guest.plusOneName,
-    additionalGuests: guest.additionalGuests,
-    ...guest.notesForAI,
-    languageMode,
-  });
-
-  const result = await generateText({
-    system: systemPrompt,
-    model: openai("gpt-5.4"),
-    messages: conversationHistory,
-  });
-
-  await fetchMutation(api.conversations.createMessage, {
-    conversationId: conversation._id,
-    role: "assistant",
-    content: result.text,
-  });
-
-  return new NextResponse(twimlMessage(result.text), {
-    headers: {
-      "Content-Type": "text/xml; charset=utf-8",
-    },
-  });
 }
