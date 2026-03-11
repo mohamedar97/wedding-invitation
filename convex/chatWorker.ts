@@ -1,18 +1,8 @@
 "use node";
 
-import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
-import twilio from "twilio";
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
-import { buildZaynPrompt } from "../app/api/chat/promptBuilder";
-
-type ChatMessage = {
-  role: "user" | "assistant";
-  content: string;
-};
 
 function getRequiredEnv(name: string) {
   const value = process.env[name]?.trim();
@@ -24,59 +14,16 @@ function getRequiredEnv(name: string) {
   return value;
 }
 
-function normalizeWhatsappAddress(value: string) {
-  const trimmed = value.trim();
+function getAppBaseUrl() {
+  const explicitUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
 
-  if (!trimmed) {
-    throw new Error("WhatsApp address is required.");
+  if (explicitUrl) {
+    return explicitUrl.replace(/\/$/, "");
   }
 
-  if (trimmed.startsWith("whatsapp:")) {
-    return trimmed;
-  }
-
-  return `whatsapp:${trimmed}`;
-}
-
-function buildSystemPrompt(guest: Doc<"guests">) {
-  const languageMode =
-    guest.notesForAI?.languageMode ??
-    (guest.preferedLanguage === "ar" ? "arabic" : "english");
-
-  return buildZaynPrompt({
-    guestName: guest.mainGuestName,
-    rsvpStatus:
-      guest.mainGuestConfirmed === undefined
-        ? "unknown"
-        : guest.mainGuestConfirmed
-          ? "attending"
-          : "declined",
-    mainGuestConfirmed: guest.mainGuestConfirmed,
-    plusOneName: guest.plusOneName,
-    additionalGuests: guest.additionalGuests,
-    ...guest.notesForAI,
-    languageMode,
-  });
-}
-
-async function sendWhatsappMessage(to: string, body: string) {
-  const accountSid = getRequiredEnv("TWILIO_ACCOUNT_SID");
-  const authToken = getRequiredEnv("TWILIO_AUTH_TOKEN");
-  const from = normalizeWhatsappAddress(getRequiredEnv("TWILIO_WHATSAPP_FROM"));
-  const normalizedTo = normalizeWhatsappAddress(to);
-  const client = twilio(accountSid, authToken);
-
-  console.info("[chat worker] calling twilio messages.create", {
-    from,
-    to: normalizedTo,
-    bodyLength: body.length,
-  });
-
-  return await client.messages.create({
-    body,
-    from,
-    to: normalizedTo,
-  });
+  throw new Error(
+    "Missing application base URL. Set NEXT_PUBLIC_APP_URL, APP_URL, or VERCEL_URL.",
+  );
 }
 
 export const sendPendingReply = internalAction({
@@ -134,51 +81,51 @@ export const sendPendingReply = internalAction({
         return;
       }
 
-      const conversationHistory: ChatMessage[] = replyContext.messages.map(
-        (message) => ({
-          role: message.role,
-          content: message.content,
+      const appBaseUrl = getAppBaseUrl();
+      const response = await fetch(`${appBaseUrl}/api/chat/process`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-chat-secret": getRequiredEnv(
+            "INTERNAL_CHAT_PROCESS_SECRET",
+          ),
+        },
+        body: JSON.stringify({
+          conversationId: args.conversationId,
+          batchId: args.batchId,
+          scheduleVersion: args.scheduleVersion,
         }),
-      );
-
-      const result = await generateText({
-        system: buildSystemPrompt(replyContext.guest),
-        model: openai("gpt-5.4"),
-        messages: conversationHistory,
       });
 
-      console.info("[chat worker] sending whatsapp reply", {
+      const payload = (await response.json()) as
+        | { text: string; twilioMessageSid?: string }
+        | { error: string };
+
+      if (!response.ok || !("text" in payload)) {
+        throw new Error(
+          "error" in payload
+            ? payload.error
+            : "Next.js processing route returned an invalid response.",
+        );
+      }
+
+      console.info("[chat worker] next route processed pending reply", {
         conversationId: args.conversationId,
         batchId: args.batchId,
-        guestId: replyContext.guest._id,
-        to: normalizeWhatsappAddress(replyContext.guest.phone),
-        inboundMessageCount: replyContext.batchMessages.length,
-        replyLength: result.text.length,
-      });
-
-      const twilioMessage = await sendWhatsappMessage(
-        replyContext.guest.phone,
-        result.text,
-      );
-
-      console.info("[chat worker] sent whatsapp reply", {
-        conversationId: args.conversationId,
-        batchId: args.batchId,
-        guestId: replyContext.guest._id,
-        to: replyContext.guest.phone,
-        twilioMessageSid: twilioMessage.sid,
+        scheduleVersion: args.scheduleVersion,
+        twilioMessageSid: payload.twilioMessageSid,
       });
 
       await ctx.runMutation(internal.conversations.completePendingReply, {
         conversationId: args.conversationId,
         batchId: args.batchId,
-        content: result.text,
+        content: payload.text,
       });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unknown chat worker error";
 
-      console.error("[chat worker] failed to send pending reply", {
+      console.error("[chat worker] failed to process pending reply", {
         conversationId: args.conversationId,
         batchId: args.batchId,
         scheduleVersion: args.scheduleVersion,

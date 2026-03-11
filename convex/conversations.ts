@@ -271,6 +271,46 @@ export const getReplyContext = internalQuery({
   },
 });
 
+export const getReplyContextForProcessing = query({
+  args: {
+    conversationId: v.id("conversations"),
+    batchId: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const conversation = await ctx.db.get(args.conversationId);
+
+    if (!conversation) {
+      return null;
+    }
+
+    const guest = await ctx.db.get(conversation.guestId);
+
+    if (!guest) {
+      return null;
+    }
+
+    const messages = sortMessagesByCreationTime(
+      await ctx.db
+        .query("messages")
+        .withIndex("by_conversationId", (q) =>
+          q.eq("conversationId", args.conversationId),
+        )
+        .collect(),
+    );
+
+    const batchMessages = messages.filter(
+      (message) => message.batchId === args.batchId && message.role === "user",
+    );
+
+    return {
+      conversation,
+      guest,
+      messages,
+      batchMessages,
+    };
+  },
+});
+
 export const completePendingReply = internalMutation({
   args: {
     conversationId: v.id("conversations"),
