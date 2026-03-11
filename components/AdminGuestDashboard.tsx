@@ -45,7 +45,6 @@ type GuestDraft = {
   preferedLanguage: "en" | "ar";
   mainGuestConfirmed: "pending" | "confirmed" | "declined";
   additionalGuests: AdditionalGuestDraft[];
-  preferredName: string;
   relationshipToCouple: string;
   languageMode: "" | "english" | "arabic" | "franco";
   communicationStyle: string;
@@ -63,7 +62,6 @@ function createEmptyDraft(): GuestDraft {
     preferedLanguage: "en",
     mainGuestConfirmed: "pending",
     additionalGuests: [],
-    preferredName: "",
     relationshipToCouple: "",
     languageMode: "",
     communicationStyle: "",
@@ -98,7 +96,6 @@ function createDraft(guest: GuestRecord): GuestDraft {
               : "pending",
         confirmedAt: additionalGuest.confirmedAt ?? "",
       })) ?? [],
-    preferredName: guest.notesForAI?.preferredName ?? "",
     relationshipToCouple: guest.notesForAI?.relationshipToCouple ?? "",
     languageMode: guest.notesForAI?.languageMode ?? "",
     communicationStyle: guest.notesForAI?.communicationStyle ?? "",
@@ -349,7 +346,6 @@ function GuestEditor({
           additionalGuests:
             additionalGuests.length > 0 ? additionalGuests : undefined,
           notesForAI: {
-            preferredName: draft.preferredName || undefined,
             relationshipToCouple: draft.relationshipToCouple || undefined,
             languageMode: draft.languageMode || undefined,
             communicationStyle: draft.communicationStyle || undefined,
@@ -593,11 +589,6 @@ function GuestEditor({
 
       <section className="grid gap-4 md:grid-cols-2">
         <Input
-          value={draft.preferredName}
-          onChange={(event) => updateDraft("preferredName", event.target.value)}
-          placeholder="Preferred name"
-        />
-        <Input
           value={draft.relationshipToCouple}
           onChange={(event) =>
             updateDraft("relationshipToCouple", event.target.value)
@@ -679,22 +670,6 @@ function GuestEditor({
               </div>
             )}
           </div>
-        </div>
-        <div className="md:col-span-2">
-          <label className="mb-2 block text-sm font-medium">Memory notes</label>
-          <Textarea
-            value={draft.extraNotes}
-            onChange={(event) => updateDraft("extraNotes", event.target.value)}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <label className="mb-2 block text-sm font-medium">
-            Sensitive notes
-          </label>
-          <Textarea
-            value={draft.extraNotes}
-            onChange={(event) => updateDraft("extraNotes", event.target.value)}
-          />
         </div>
         <div className="md:col-span-2">
           <label className="mb-2 block text-sm font-medium">Extra notes</label>

@@ -30,6 +30,14 @@ export default defineSchema({
       v.object({
         preferredName: v.optional(v.string()),
         relationshipToCouple: v.optional(v.string()),
+        howTheyKnowCouple: v.optional(v.string()),
+        familyContext: v.optional(v.string()),
+        location: v.optional(v.string()),
+        occupationOrSchool: v.optional(v.string()),
+        interests: v.optional(v.string()),
+        conversationStarters: v.optional(v.string()),
+        sensitivities: v.optional(v.string()),
+        logisticsNeeds: v.optional(v.string()),
         languageMode: v.optional(languageMode),
         communicationStyle: v.optional(v.string()),
         plusOneNames: v.optional(

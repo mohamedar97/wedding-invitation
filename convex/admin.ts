@@ -24,14 +24,10 @@ const plusOneNamesValidator = v.array(
 );
 
 const notesForAiValidator = v.object({
-  preferredName: v.optional(v.string()),
   relationshipToCouple: v.optional(v.string()),
   languageMode: v.optional(languageMode),
   communicationStyle: v.optional(v.string()),
   plusOneNames: v.optional(plusOneNamesValidator),
-  memoryNotes: v.optional(v.string()),
-  sensitiveNotes: v.optional(v.string()),
-  lastInteractionSummary: v.optional(v.string()),
   extraNotes: v.optional(v.string()),
 });
 
@@ -40,25 +36,18 @@ function normalizeOptionalString(value?: string) {
   return trimmed ? trimmed : undefined;
 }
 
-function normalizeNotes(
-  notes?: {
-    preferredName?: string;
-    relationshipToCouple?: string;
-    languageMode?: "english" | "arabic" | "franco";
-    communicationStyle?: string;
-    plusOneNames?: { name: string; relationshipToGuest: string }[];
-    memoryNotes?: string;
-    sensitiveNotes?: string;
-    lastInteractionSummary?: string;
-    extraNotes?: string;
-  },
-) {
+function normalizeNotes(notes?: {
+  relationshipToCouple?: string;
+  languageMode?: "english" | "arabic" | "franco";
+  communicationStyle?: string;
+  plusOneNames?: { name: string; relationshipToGuest: string }[];
+  extraNotes?: string;
+}) {
   if (!notes) {
     return undefined;
   }
 
   const normalized = {
-    preferredName: normalizeOptionalString(notes.preferredName),
     relationshipToCouple: normalizeOptionalString(notes.relationshipToCouple),
     languageMode: notes.languageMode,
     communicationStyle: normalizeOptionalString(notes.communicationStyle),
@@ -69,13 +58,8 @@ function normalizeNotes(
               name: plusOne.name.trim(),
               relationshipToGuest: plusOne.relationshipToGuest.trim(),
             }))
-            .filter(
-              (plusOne) => plusOne.name && plusOne.relationshipToGuest,
-            )
+            .filter((plusOne) => plusOne.name && plusOne.relationshipToGuest)
         : undefined,
-    memoryNotes: normalizeOptionalString(notes.memoryNotes),
-    sensitiveNotes: normalizeOptionalString(notes.sensitiveNotes),
-    lastInteractionSummary: normalizeOptionalString(notes.lastInteractionSummary),
     extraNotes: normalizeOptionalString(notes.extraNotes),
   };
 

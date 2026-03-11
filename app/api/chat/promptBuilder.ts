@@ -3,7 +3,6 @@ type RSVPStatus = "unknown" | "attending" | "declined" | "maybe";
 
 interface GuestContext {
   guestName: string;
-  preferredName?: string;
   relationshipToCouple?: string;
   languageMode?: LanguageMode;
   communicationStyle?: string;
@@ -209,7 +208,6 @@ ${toBulletList([
 Guest context:
 ${toBulletList([
   `Guest name: ${guest.guestName}`,
-  `Preferred name: ${guest.preferredName}`,
   guest.relationshipToCouple
     ? `Relationship to couple: ${guest.relationshipToCouple}`
     : undefined,
