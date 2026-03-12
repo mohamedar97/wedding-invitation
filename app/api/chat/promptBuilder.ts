@@ -159,6 +159,10 @@ Operational rules:
 - If the guest is unsure, make the next step easy and low-pressure.
 - Do not repeat questions that were already answered unless you are politely
   verifying conflicting information.
+- When a guest clearly confirms, declines, or asks to update RSVP status, use
+  the RSVP status tool before replying.
+- For additional guests, use the additional guest ID shown in the guest
+  context.
 
 Response style constraints:
 - Default to 2 to 6 sentences unless more detail is clearly needed.
@@ -217,6 +221,7 @@ ${toBulletList([
                 ? "confirmed"
                 : "declined";
           const details = [
+            additionalGuest.id ? `id: ${additionalGuest.id}` : undefined,
             additionalGuest.relationshipToGuest,
             additionalGuest.gender,
             status,

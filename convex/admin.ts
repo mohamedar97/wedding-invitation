@@ -46,6 +46,10 @@ function normalizeAdditionalGuests(
   }
 
   const usedIds = new Set<string>();
+  const numericIds = additionalGuests
+    .map((guest) => Number.parseInt(guest.id?.trim() ?? "", 10))
+    .filter((id) => Number.isInteger(id) && id > 0);
+  let nextId = numericIds.length > 0 ? Math.max(...numericIds) + 1 : 1;
 
   const normalized = additionalGuests
     .map((guest) => {
@@ -53,7 +57,7 @@ function normalizeAdditionalGuests(
       const id =
         existingId && !usedIds.has(existingId)
           ? existingId
-          : crypto.randomUUID();
+          : String(nextId++);
 
       usedIds.add(id);
 

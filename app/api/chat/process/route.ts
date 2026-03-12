@@ -1,15 +1,18 @@
-import { generateText } from "ai";
+import { generateText, tool } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { api } from "@/convex/_generated/api";
-import { fetchQuery } from "convex/nextjs";
+import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { NextResponse } from "next/server";
 import twilio from "twilio";
+import { z } from "zod";
 import { buildZaynPrompt } from "../promptBuilder";
+import { Id } from "@/convex/_generated/dataModel";
 
 type LanguageMode = "english" | "arabic" | "franco";
 
 type GuestContext = {
   _id: string;
+  slug: string;
   mainGuestName: string;
   mainGuestConfirmed?: boolean;
   additionalGuests?: Array<{
@@ -40,6 +43,8 @@ type ProcessRequest = {
   batchId: number;
   scheduleVersion: number;
 };
+
+type ConfirmationStatus = "pending" | "confirmed" | "declined";
 
 function getRequiredEnv(name: string) {
   const value = process.env[name]?.trim();
@@ -94,6 +99,49 @@ function buildSystemPrompt(guest: GuestContext) {
   });
 }
 
+function buildUpdateGuestConfirmationStatusTool(guest: GuestContext) {
+  return tool({
+    description:
+      "Update RSVP status for the main guest or one additional guest when the guest clearly confirms, declines, or asks to change RSVP status.",
+    inputSchema: z.object({
+      targetType: z.enum(["main_guest", "additional_guest"]),
+      additionalGuestId: z.string().optional(),
+      status: z.enum(["pending", "confirmed", "declined"]),
+    }),
+    execute: async ({
+      targetType,
+      additionalGuestId,
+      status,
+    }: {
+      targetType: "main_guest" | "additional_guest";
+      additionalGuestId?: string;
+      status: ConfirmationStatus;
+    }) => {
+      const matchingAdditionalGuest =
+        targetType === "additional_guest"
+          ? guest.additionalGuests?.find(
+              (additionalGuest) => additionalGuest.id === additionalGuestId,
+            )
+          : undefined;
+
+      const result = await fetchMutation(api.rsvp.setGuestConfirmationStatus, {
+        slug: guest.slug,
+        targetType,
+        additionalGuestId,
+        status,
+      });
+
+      return {
+        ...result,
+        guestName:
+          targetType === "main_guest"
+            ? guest.mainGuestName
+            : (matchingAdditionalGuest?.name ?? null),
+      };
+    },
+  });
+}
+
 async function sendWhatsappMessage(to: string, body: string) {
   const accountSid = getRequiredEnv("TWILIO_ACCOUNT_SID");
   const authToken = getRequiredEnv("TWILIO_AUTH_TOKEN");
@@ -125,7 +173,7 @@ export async function POST(req: Request) {
     const replyContext = await fetchQuery(
       api.conversations.getReplyContextForProcessing,
       {
-        conversationId: body.conversationId as never,
+        conversationId: body.conversationId as Id<"conversations">,
         batchId: body.batchId,
       },
     );
@@ -152,8 +200,12 @@ export async function POST(req: Request) {
     });
 
     const result = await generateText({
-      system: buildSystemPrompt(replyContext.guest as GuestContext),
+      system: buildSystemPrompt(replyContext.guest),
       model: openai("gpt-5.4"),
+      tools: {
+        update_guest_confirmation_status:
+          buildUpdateGuestConfirmationStatusTool(replyContext.guest),
+      },
       messages: replyContext.messages.map(
         (message: { role: "user" | "assistant"; content: string }) => ({
           role: message.role,
