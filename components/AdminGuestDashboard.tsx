@@ -27,13 +27,12 @@ import { cn } from "@/lib/utils";
 
 type GuestRecord = Doc<"guests">;
 type AdditionalGuestDraft = {
-  name: string;
-  confirmed: "pending" | "confirmed" | "declined";
-  confirmedAt: string;
-};
-type PlusOneNameDraft = {
+  id: string;
   name: string;
   relationshipToGuest: string;
+  gender: string;
+  confirmed: "pending" | "confirmed" | "declined";
+  confirmedAt: string;
 };
 type ConversationRecord = Doc<"conversations">;
 type MessageRecord = Doc<"messages">;
@@ -50,9 +49,19 @@ type GuestDraft = {
   relationshipToCouple: string;
   languageMode: "" | "english" | "arabic" | "franco";
   communicationStyle: string;
-  plusOneNames: PlusOneNameDraft[];
   extraNotes: string;
 };
+
+function createAdditionalGuestDraft(): AdditionalGuestDraft {
+  return {
+    id: crypto.randomUUID(),
+    name: "",
+    relationshipToGuest: "",
+    gender: "",
+    confirmed: "pending",
+    confirmedAt: "",
+  };
+}
 
 function createEmptyDraft(): GuestDraft {
   return {
@@ -67,7 +76,6 @@ function createEmptyDraft(): GuestDraft {
     relationshipToCouple: "",
     languageMode: "",
     communicationStyle: "",
-    plusOneNames: [],
     extraNotes: "",
   };
 }
@@ -89,7 +97,10 @@ function createDraft(guest: GuestRecord): GuestDraft {
           : "pending",
     additionalGuests:
       guest.additionalGuests?.map((additionalGuest) => ({
+        id: additionalGuest.id,
         name: additionalGuest.name,
+        relationshipToGuest: additionalGuest.relationshipToGuest,
+        gender: additionalGuest.gender,
         confirmed:
           additionalGuest.confirmed === true
             ? "confirmed"
@@ -101,11 +112,7 @@ function createDraft(guest: GuestRecord): GuestDraft {
     relationshipToCouple: guest.notesForAI?.relationshipToCouple ?? "",
     languageMode: guest.notesForAI?.languageMode ?? "",
     communicationStyle: guest.notesForAI?.communicationStyle ?? "",
-    plusOneNames:
-      guest.notesForAI?.plusOneNames?.map((plusOne) => ({
-        name: plusOne.name,
-        relationshipToGuest: plusOne.relationshipToGuest,
-      })) ?? [],
+
     extraNotes: guest.notesForAI?.extraNotes ?? "",
   };
 }
@@ -256,6 +263,8 @@ export default function AdminGuestDashboard() {
       [
         guest.mainGuestName,
         guest.plusOneName,
+        ...(guest.additionalGuests?.map((additionalGuest) => additionalGuest.name) ??
+          []),
         guest.slug,
         guest.phone,
         guest.email,
@@ -441,21 +450,23 @@ function GuestEditor({
 
     const additionalGuests = draft.additionalGuests
       .map((additionalGuest) => ({
+        id: additionalGuest.id.trim(),
         name: additionalGuest.name.trim(),
+        relationshipToGuest: additionalGuest.relationshipToGuest.trim(),
+        gender: additionalGuest.gender.trim(),
         confirmed:
           additionalGuest.confirmed === "pending"
             ? undefined
             : additionalGuest.confirmed === "confirmed",
         confirmedAt: additionalGuest.confirmedAt.trim() || undefined,
       }))
-      .filter((additionalGuest) => additionalGuest.name);
-
-    const plusOneNames = draft.plusOneNames
-      .map((plusOne) => ({
-        name: plusOne.name.trim(),
-        relationshipToGuest: plusOne.relationshipToGuest.trim(),
-      }))
-      .filter((plusOne) => plusOne.name || plusOne.relationshipToGuest);
+      .filter(
+        (additionalGuest) =>
+          additionalGuest.id &&
+          additionalGuest.name &&
+          additionalGuest.relationshipToGuest &&
+          additionalGuest.gender,
+      );
 
     startTransition(async () => {
       try {
@@ -476,7 +487,6 @@ function GuestEditor({
             relationshipToCouple: draft.relationshipToCouple || undefined,
             languageMode: draft.languageMode || undefined,
             communicationStyle: draft.communicationStyle || undefined,
-            plusOneNames: plusOneNames.length > 0 ? plusOneNames : undefined,
             extraNotes: draft.extraNotes || undefined,
           },
         };
@@ -526,7 +536,7 @@ function GuestEditor({
       ...current,
       additionalGuests: [
         ...current.additionalGuests,
-        { name: "", confirmed: "pending", confirmedAt: "" },
+        createAdditionalGuestDraft(),
       ],
     }));
     setFeedback(null);
@@ -538,44 +548,6 @@ function GuestEditor({
       ...current,
       additionalGuests: current.additionalGuests.filter(
         (_, guestIndex) => guestIndex !== index,
-      ),
-    }));
-    setFeedback(null);
-    setError(null);
-  }
-
-  function updatePlusOneName(
-    index: number,
-    key: keyof PlusOneNameDraft,
-    value: PlusOneNameDraft[keyof PlusOneNameDraft],
-  ) {
-    setDraft((current) => ({
-      ...current,
-      plusOneNames: current.plusOneNames.map((plusOne, plusOneIndex) =>
-        plusOneIndex === index ? { ...plusOne, [key]: value } : plusOne,
-      ),
-    }));
-    setFeedback(null);
-    setError(null);
-  }
-
-  function addPlusOneName() {
-    setDraft((current) => ({
-      ...current,
-      plusOneNames: [
-        ...current.plusOneNames,
-        { name: "", relationshipToGuest: "" },
-      ],
-    }));
-    setFeedback(null);
-    setError(null);
-  }
-
-  function removePlusOneName(index: number) {
-    setDraft((current) => ({
-      ...current,
-      plusOneNames: current.plusOneNames.filter(
-        (_, plusOneIndex) => plusOneIndex !== index,
       ),
     }));
     setFeedback(null);
@@ -660,7 +632,7 @@ function GuestEditor({
               draft.additionalGuests.map((additionalGuest, index) => (
                 <div
                   key={`${rowKeyPrefix}-additional-${index}`}
-                  className="grid gap-3 rounded-lg border border-stone-200 p-3 md:grid-cols-[minmax(0,1.4fr)_180px_minmax(0,1fr)_auto]"
+                  className="grid gap-3 rounded-lg border border-stone-200 p-3 md:grid-cols-2"
                 >
                   <Input
                     value={additionalGuest.name}
@@ -668,6 +640,24 @@ function GuestEditor({
                       updateAdditionalGuest(index, "name", event.target.value)
                     }
                     placeholder="Guest name"
+                  />
+                  <Input
+                    value={additionalGuest.relationshipToGuest}
+                    onChange={(event) =>
+                      updateAdditionalGuest(
+                        index,
+                        "relationshipToGuest",
+                        event.target.value,
+                      )
+                    }
+                    placeholder="Relationship to guest"
+                  />
+                  <Input
+                    value={additionalGuest.gender}
+                    onChange={(event) =>
+                      updateAdditionalGuest(index, "gender", event.target.value)
+                    }
+                    placeholder="Gender"
                   />
                   <Select
                     value={additionalGuest.confirmed}
@@ -744,60 +734,6 @@ function GuestEditor({
           }
           placeholder="Communication style"
         />
-        <div className="md:col-span-2">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <label className="block text-sm font-medium">Plus-one names</label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addPlusOneName}
-            >
-              Add plus-one
-            </Button>
-          </div>
-          <div className="space-y-3">
-            {draft.plusOneNames.length ? (
-              draft.plusOneNames.map((plusOne, index) => (
-                <div
-                  key={`${rowKeyPrefix}-plus-one-${index}`}
-                  className="grid gap-3 rounded-lg border border-stone-200 p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
-                >
-                  <Input
-                    value={plusOne.name}
-                    onChange={(event) =>
-                      updatePlusOneName(index, "name", event.target.value)
-                    }
-                    placeholder="Name"
-                  />
-                  <Input
-                    value={plusOne.relationshipToGuest}
-                    onChange={(event) =>
-                      updatePlusOneName(
-                        index,
-                        "relationshipToGuest",
-                        event.target.value,
-                      )
-                    }
-                    placeholder="Relationship to guest"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removePlusOneName(index)}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ))
-            ) : (
-              <div className="rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">
-                No plus-one names.
-              </div>
-            )}
-          </div>
-        </div>
         <div className="md:col-span-2">
           <label className="mb-2 block text-sm font-medium">Extra notes</label>
           <Textarea

@@ -16,7 +16,10 @@ export default defineSchema({
     additionalGuests: v.optional(
       v.array(
         v.object({
+          id: v.string(),
           name: v.string(),
+          relationshipToGuest: v.string(),
+          gender: v.string(),
           confirmed: v.optional(v.boolean()),
           confirmedAt: v.optional(v.string()),
         }),
@@ -28,23 +31,9 @@ export default defineSchema({
     preferedLanguage: v.union(v.literal("en"), v.literal("ar")),
     notesForAI: v.optional(
       v.object({
-        preferredName: v.optional(v.string()),
         relationshipToCouple: v.optional(v.string()),
-        howTheyKnowCouple: v.optional(v.string()),
-        familyContext: v.optional(v.string()),
-        location: v.optional(v.string()),
-        occupationOrSchool: v.optional(v.string()),
-        interests: v.optional(v.string()),
-        conversationStarters: v.optional(v.string()),
-        sensitivities: v.optional(v.string()),
-        logisticsNeeds: v.optional(v.string()),
         languageMode: v.optional(languageMode),
         communicationStyle: v.optional(v.string()),
-        plusOneNames: v.optional(
-          v.array(
-            v.object({ name: v.string(), relationshipToGuest: v.string() }),
-          ),
-        ),
         extraNotes: v.optional(v.string()),
       }),
     ),

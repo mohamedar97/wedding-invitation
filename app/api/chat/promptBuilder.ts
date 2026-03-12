@@ -8,13 +8,14 @@ interface GuestContext {
   communicationStyle?: string;
   rsvpStatus?: RSVPStatus;
   mainGuestConfirmed?: boolean;
-  plusOneName?: string;
   additionalGuests?: Array<{
+    id?: string;
     name: string;
+    relationshipToGuest?: string;
+    gender?: string;
     confirmed?: boolean;
     confirmedAt?: string;
   }>;
-  plusOneNames?: Array<{ name: string; relationshipToGuest: string }>;
   extraNotes?: string;
 }
 
@@ -206,7 +207,6 @@ ${toBulletList([
     : undefined,
   guest.rsvpStatus ? `RSVP status: ${guest.rsvpStatus}` : undefined,
   `Main guest confirmed: ${boolText(guest.mainGuestConfirmed)}`,
-  guest.plusOneName ? `Plus-one name: ${guest.plusOneName}` : undefined,
   guest.additionalGuests?.length
     ? `Additional guests: ${guest.additionalGuests
         .map((additionalGuest) => {
@@ -216,15 +216,18 @@ ${toBulletList([
               : additionalGuest.confirmed
                 ? "confirmed"
                 : "declined";
-          return `${additionalGuest.name} (${status})`;
+          const details = [
+            additionalGuest.relationshipToGuest,
+            additionalGuest.gender,
+            status,
+          ]
+            .filter(Boolean)
+            .join(", ");
+          return `${additionalGuest.name}${details ? ` (${details})` : ""}`;
         })
         .join(", ")}`
     : undefined,
-  guest.plusOneNames
-    ? `Plus-one names: ${guest.plusOneNames.map((plusOne) => `${plusOne.name} (${plusOne.relationshipToGuest})`).join(", ")}`
-    : undefined,
   guest.extraNotes ? `Extra notes: ${guest.extraNotes}` : undefined,
-  ,
 ])}
 `.trim();
 

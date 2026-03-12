@@ -4,7 +4,7 @@ import { mutation } from "./_generated/server";
 export const updateGuestConfirmation = mutation({
   args: {
     slug: v.string(),
-    guestIndex: v.optional(v.number()),
+    additionalGuestId: v.optional(v.string()),
     isMainGuest: v.boolean(),
     confirmed: v.boolean(),
   },
@@ -27,20 +27,27 @@ export const updateGuestConfirmation = mutation({
     }
 
     const additionalGuests = record.additionalGuests ?? [];
-
-    if (
-      args.guestIndex === undefined ||
-      !additionalGuests[args.guestIndex]
-    ) {
-      throw new Error(`No guest found at index ${args.guestIndex}`);
+    if (!args.additionalGuestId) {
+      throw new Error("Additional guest ID is required.");
     }
 
-    const updatedAdditionalGuests = [...additionalGuests];
-    updatedAdditionalGuests[args.guestIndex] = {
-      ...updatedAdditionalGuests[args.guestIndex],
-      confirmed: args.confirmed,
-      confirmedAt: new Date().toISOString(),
-    };
+    const guestExists = additionalGuests.some(
+      (guest) => guest.id === args.additionalGuestId,
+    );
+
+    if (!guestExists) {
+      throw new Error(`No guest found with id ${args.additionalGuestId}`);
+    }
+
+    const updatedAdditionalGuests = additionalGuests.map((guest) =>
+      guest.id === args.additionalGuestId
+        ? {
+            ...guest,
+            confirmed: args.confirmed,
+            confirmedAt: new Date().toISOString(),
+          }
+        : guest,
+    );
 
     await ctx.db.patch(record._id, {
       additionalGuests: updatedAdditionalGuests,

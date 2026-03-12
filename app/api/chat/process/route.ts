@@ -12,9 +12,11 @@ type GuestContext = {
   _id: string;
   mainGuestName: string;
   mainGuestConfirmed?: boolean;
-  plusOneName?: string;
   additionalGuests?: Array<{
+    id: string;
     name: string;
+    relationshipToGuest: string;
+    gender: string;
     confirmed?: boolean;
     confirmedAt?: string;
   }>;
@@ -24,7 +26,6 @@ type GuestContext = {
     languageMode?: LanguageMode;
     relationshipToCouple?: string;
     communicationStyle?: string;
-    plusOneNames?: Array<{ name: string; relationshipToGuest: string }>;
     extraNotes?: string;
   };
 };
@@ -87,7 +88,6 @@ function buildSystemPrompt(guest: GuestContext) {
           ? "attending"
           : "declined",
     mainGuestConfirmed: guest.mainGuestConfirmed,
-    plusOneName: guest.plusOneName,
     additionalGuests: guest.additionalGuests,
     ...guest.notesForAI,
     languageMode,

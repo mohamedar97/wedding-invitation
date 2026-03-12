@@ -10,16 +10,12 @@ const languageMode = v.union(
 
 const additionalGuestValidator = v.array(
   v.object({
-    name: v.string(),
-    confirmed: v.optional(v.boolean()),
-    confirmedAt: v.optional(v.string()),
-  }),
-);
-
-const plusOneNamesValidator = v.array(
-  v.object({
+    id: v.optional(v.string()),
     name: v.string(),
     relationshipToGuest: v.string(),
+    gender: v.string(),
+    confirmed: v.optional(v.boolean()),
+    confirmedAt: v.optional(v.string()),
   }),
 );
 
@@ -27,7 +23,6 @@ const notesForAiValidator = v.object({
   relationshipToCouple: v.optional(v.string()),
   languageMode: v.optional(languageMode),
   communicationStyle: v.optional(v.string()),
-  plusOneNames: v.optional(plusOneNamesValidator),
   extraNotes: v.optional(v.string()),
 });
 
@@ -36,11 +31,50 @@ function normalizeOptionalString(value?: string) {
   return trimmed ? trimmed : undefined;
 }
 
+function normalizeAdditionalGuests(
+  additionalGuests?: {
+    id?: string;
+    name: string;
+    relationshipToGuest: string;
+    gender: string;
+    confirmed?: boolean;
+    confirmedAt?: string;
+  }[],
+) {
+  if (!additionalGuests?.length) {
+    return undefined;
+  }
+
+  const usedIds = new Set<string>();
+
+  const normalized = additionalGuests
+    .map((guest) => {
+      const existingId = guest.id?.trim();
+      const id =
+        existingId && !usedIds.has(existingId)
+          ? existingId
+          : crypto.randomUUID();
+
+      usedIds.add(id);
+
+      return {
+        id,
+        name: guest.name.trim(),
+        relationshipToGuest: guest.relationshipToGuest.trim(),
+        gender: guest.gender.trim(),
+        confirmed: guest.confirmed,
+        confirmedAt: normalizeOptionalString(guest.confirmedAt),
+      };
+    })
+    .filter((guest) => guest.name && guest.relationshipToGuest && guest.gender);
+
+  return normalized.length ? normalized : undefined;
+}
+
 function normalizeNotes(notes?: {
   relationshipToCouple?: string;
   languageMode?: "english" | "arabic" | "franco";
   communicationStyle?: string;
-  plusOneNames?: { name: string; relationshipToGuest: string }[];
   extraNotes?: string;
 }) {
   if (!notes) {
@@ -51,15 +85,6 @@ function normalizeNotes(notes?: {
     relationshipToCouple: normalizeOptionalString(notes.relationshipToCouple),
     languageMode: notes.languageMode,
     communicationStyle: normalizeOptionalString(notes.communicationStyle),
-    plusOneNames:
-      notes.plusOneNames && notes.plusOneNames.length > 0
-        ? notes.plusOneNames
-            .map((plusOne) => ({
-              name: plusOne.name.trim(),
-              relationshipToGuest: plusOne.relationshipToGuest.trim(),
-            }))
-            .filter((plusOne) => plusOne.name && plusOne.relationshipToGuest)
-        : undefined,
     extraNotes: normalizeOptionalString(notes.extraNotes),
   };
 
@@ -123,14 +148,7 @@ export const createGuest = mutation({
       mainGuestName: args.mainGuestName.trim(),
       mainGuestConfirmed: args.mainGuestConfirmed,
       plusOneName: normalizeOptionalString(args.plusOneName),
-      additionalGuests:
-        args.additionalGuests && args.additionalGuests.length > 0
-          ? args.additionalGuests.map((guest) => ({
-              name: guest.name.trim(),
-              confirmed: guest.confirmed,
-              confirmedAt: normalizeOptionalString(guest.confirmedAt),
-            }))
-          : undefined,
+      additionalGuests: normalizeAdditionalGuests(args.additionalGuests),
       slug,
       email: normalizeOptionalString(args.email),
       phone: args.phone.trim(),
@@ -158,14 +176,7 @@ export const updateGuest = mutation({
       mainGuestName: args.mainGuestName.trim(),
       mainGuestConfirmed: args.mainGuestConfirmed,
       plusOneName: normalizeOptionalString(args.plusOneName),
-      additionalGuests:
-        args.additionalGuests && args.additionalGuests.length > 0
-          ? args.additionalGuests.map((guest) => ({
-              name: guest.name.trim(),
-              confirmed: guest.confirmed,
-              confirmedAt: normalizeOptionalString(guest.confirmedAt),
-            }))
-          : undefined,
+      additionalGuests: normalizeAdditionalGuests(args.additionalGuests),
       slug: args.slug.trim(),
       email: normalizeOptionalString(args.email),
       phone: args.phone.trim(),

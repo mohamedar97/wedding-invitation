@@ -20,7 +20,7 @@ type RSVPProps = {
 
 type RSVPEntry = {
   kind: "main" | "guest";
-  guestIndex?: number;
+  guestId?: string;
   name: string;
   confirmed?: boolean;
   confirmedAt?: string;
@@ -42,7 +42,7 @@ export default function RSVP({ slug }: RSVPProps) {
         ...(guestRecord.additionalGuests ?? []).map((guest, index) => ({
           ...guest,
           kind: "guest" as const,
-          guestIndex: index,
+          guestId: guest.id,
         })),
       ];
   const allResponded = rsvpEntries.every(
@@ -50,14 +50,13 @@ export default function RSVP({ slug }: RSVPProps) {
   );
 
   async function handleToggle(entry: RSVPEntry, confirmed: boolean) {
-    const loadingKey =
-      entry.kind === "main" ? "main" : `guest-${entry.guestIndex}`;
+    const loadingKey = entry.kind === "main" ? "main" : `guest-${entry.guestId}`;
     setLoadingTarget(loadingKey);
     try {
       await updateGuest({
         slug,
         isMainGuest: entry.kind === "main",
-        guestIndex: entry.guestIndex,
+        additionalGuestId: entry.guestId,
         confirmed,
       });
     } finally {
@@ -94,7 +93,7 @@ export default function RSVP({ slug }: RSVPProps) {
           <div className="flex flex-col gap-3 py-2">
             {rsvpEntries.map((guest) => (
               <div
-                key={guest.kind === "main" ? "main" : guest.guestIndex}
+                key={guest.kind === "main" ? "main" : guest.guestId}
                 className="flex items-center justify-between rounded-lg border border-[#834213]/20 px-4 py-3"
               >
                 <span className={` text-lg font-medium text-[#834213]`}>
@@ -105,7 +104,7 @@ export default function RSVP({ slug }: RSVPProps) {
                   {loadingTarget ===
                   (guest.kind === "main"
                     ? "main"
-                    : `guest-${guest.guestIndex}`) ? (
+                    : `guest-${guest.guestId}`) ? (
                     <Loader2Icon className="size-5 animate-spin text-[#834213]/50" />
                   ) : (
                     <>
