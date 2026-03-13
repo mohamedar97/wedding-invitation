@@ -57,7 +57,6 @@ const notesForAiValidator = v.object({
   languageMode: v.optional(languageMode),
   communicationStyle: v.optional(communicationStyle),
   relationshipToCouple: v.optional(relationshipToCouple),
-  guestSide: v.optional(guestSide),
   relationship: v.optional(v.string()),
   personality: v.optional(v.string()),
   personalInfo: v.optional(v.string()),
@@ -140,7 +139,6 @@ function normalizeNotes(notes?: {
     | "colleague"
     | "family_friend"
     | "other";
-  guestSide?: "groom" | "bride";
   relationship?: string;
   personality?: string;
   personalInfo?: string;
@@ -156,7 +154,6 @@ function normalizeNotes(notes?: {
     languageMode: notes.languageMode,
     communicationStyle: notes.communicationStyle,
     relationshipToCouple: notes.relationshipToCouple,
-    guestSide: notes.guestSide,
     relationship: normalizeOptionalString(notes.relationship),
     personality: normalizeOptionalString(notes.personality),
     personalInfo: normalizeOptionalString(notes.personalInfo),
@@ -197,13 +194,13 @@ export const createGuest = mutation({
     email: v.optional(v.string()),
     phone: v.string(),
     preferedLanguage: v.union(v.literal("en"), v.literal("ar")),
+    guestSide: guestSide,
     notesForAI: v.optional(notesForAiValidator),
   },
   handler: async (ctx, args) => {
     const mainGuestName = args.mainGuestName.trim();
     const slug = args.slug.trim();
     const phone = args.phone.trim();
-    const guestSide = args.notesForAI?.guestSide;
 
     if (!mainGuestName) {
       throw new Error("Main guest name is required.");
@@ -215,10 +212,6 @@ export const createGuest = mutation({
 
     if (!phone) {
       throw new Error("Phone is required.");
-    }
-
-    if (!guestSide) {
-      throw new Error("Guest side is required.");
     }
 
     const existingGuest = await ctx.db
@@ -241,6 +234,7 @@ export const createGuest = mutation({
       email: normalizeOptionalString(args.email),
       phone,
       preferedLanguage: args.preferedLanguage,
+      guestSide: args.guestSide,
       notesForAI: normalizeNotes(args.notesForAI),
     });
   },
@@ -259,13 +253,13 @@ export const updateGuest = mutation({
     email: v.optional(v.string()),
     phone: v.string(),
     preferedLanguage: v.union(v.literal("en"), v.literal("ar")),
+    guestSide: guestSide,
     notesForAI: v.optional(notesForAiValidator),
   },
   handler: async (ctx, args) => {
     const mainGuestName = args.mainGuestName.trim();
     const slug = args.slug.trim();
     const phone = args.phone.trim();
-    const guestSide = args.notesForAI?.guestSide;
 
     if (!mainGuestName) {
       throw new Error("Main guest name is required.");
@@ -277,10 +271,6 @@ export const updateGuest = mutation({
 
     if (!phone) {
       throw new Error("Phone is required.");
-    }
-
-    if (!guestSide) {
-      throw new Error("Guest side is required.");
     }
 
     const existingGuest = await ctx.db
@@ -303,6 +293,7 @@ export const updateGuest = mutation({
       email: normalizeOptionalString(args.email),
       phone,
       preferedLanguage: args.preferedLanguage,
+      guestSide: args.guestSide,
       notesForAI: normalizeNotes(args.notesForAI),
     });
   },

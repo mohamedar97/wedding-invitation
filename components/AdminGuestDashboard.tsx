@@ -55,7 +55,6 @@ type GuestNotesForAI = {
   languageMode?: "" | "english" | "arabic" | "franco";
   communicationStyle?: "" | CommunicationStyleOption;
   relationshipToCouple?: "" | RelationshipToCoupleOption;
-  guestSide?: "" | GuestSideOption;
   relationship?: string;
   personality?: string;
   personalInfo?: string;
@@ -64,6 +63,7 @@ type GuestNotesForAI = {
   extraNotes?: string;
 };
 type GuestRecordWithLocalFields = GuestRecord & {
+  guestSide?: GuestSideOption;
   mainGuestGender?: GenderOption;
   mainGuestAge?: number;
   additionalGuests?: Array<
@@ -79,7 +79,7 @@ type GuestRecordWithLocalFields = GuestRecord & {
           confirmedAt?: string;
         }
   >;
-  notesForAI?: GuestNotesForAI;
+  notesForAI?: GuestNotesForAI & { guestSide?: GuestSideOption };
 };
 
 type AdditionalGuestDraft = {
@@ -260,7 +260,7 @@ function createDraft(rawGuest: GuestRecord): GuestDraft {
     languageMode: guest.notesForAI?.languageMode ?? "",
     communicationStyle: guest.notesForAI?.communicationStyle ?? "",
     relationshipToCouple: guest.notesForAI?.relationshipToCouple ?? "",
-    guestSide: guest.notesForAI?.guestSide ?? "",
+    guestSide: guest.guestSide ?? guest.notesForAI?.guestSide ?? "",
     relationship: guest.notesForAI?.relationship ?? "",
     personality: guest.notesForAI?.personality ?? "",
     personalInfo: guest.notesForAI?.personalInfo ?? "",
@@ -309,6 +309,11 @@ function getMinimumValidationError(
 
 function getGuestSideLabel(side: GuestSideOption) {
   return side === "groom" ? "Groom side" : "Bride side";
+}
+
+function getGuestSideValue(guest: GuestRecord) {
+  const record = guest as GuestRecordWithLocalFields;
+  return record.guestSide ?? record.notesForAI?.guestSide;
 }
 
 function statusLabel(guest: GuestRecord) {
@@ -484,8 +489,7 @@ export default function AdminGuestDashboard() {
 
     return guests.filter((guest) => {
       const matchesGuestSide =
-        guestSideFilter === "all" ||
-        guest.notesForAI?.guestSide === guestSideFilter;
+        guestSideFilter === "all" || getGuestSideValue(guest) === guestSideFilter;
 
       if (!matchesGuestSide) {
         return false;
@@ -615,9 +619,9 @@ export default function AdminGuestDashboard() {
                       </Badge>
                     </div>
                     <div className="mt-1 text-xs opacity-75">{guest.slug}</div>
-                    {guest.notesForAI?.guestSide ? (
+                    {getGuestSideValue(guest) ? (
                       <div className="mt-2 text-xs opacity-75">
-                        {getGuestSideLabel(guest.notesForAI.guestSide)}
+                        {getGuestSideLabel(getGuestSideValue(guest)!)}
                       </div>
                     ) : null}
                   </button>
@@ -792,6 +796,7 @@ function GuestEditor({
           email: draft.email || undefined,
           plusOneName: draft.plusOneName || undefined,
           preferedLanguage,
+          guestSide: draft.guestSide as GuestSideOption,
           mainGuestConfirmed:
             draft.mainGuestConfirmed === "pending"
               ? undefined
@@ -802,7 +807,6 @@ function GuestEditor({
             languageMode: draft.languageMode || undefined,
             communicationStyle: draft.communicationStyle || undefined,
             relationshipToCouple: draft.relationshipToCouple || undefined,
-            guestSide: draft.guestSide || undefined,
             relationship: draft.relationship || undefined,
             personality: draft.personality || undefined,
             personalInfo: draft.personalInfo || undefined,

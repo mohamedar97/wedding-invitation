@@ -47,6 +47,7 @@ export default defineSchema({
     mainGuestAge: v.optional(v.number()),
     mainGuestConfirmed: v.optional(v.boolean()),
     mainGuestConfirmedAt: v.optional(v.string()),
+    guestSide: v.optional(guestSide),
     plusOneName: v.optional(v.string()),
     additionalGuests: v.optional(
       v.array(
@@ -70,7 +71,6 @@ export default defineSchema({
         languageMode: v.optional(languageMode),
         communicationStyle: v.optional(communicationStyle),
         relationshipToCouple: v.optional(relationshipToCouple),
-        guestSide: v.optional(guestSide),
         relationship: v.optional(v.string()),
         personality: v.optional(v.string()),
         personalInfo: v.optional(v.string()),

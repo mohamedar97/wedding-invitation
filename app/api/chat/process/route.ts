@@ -17,6 +17,7 @@ type GuestContext = {
   mainGuestGender?: "male" | "female";
   mainGuestAge?: number;
   mainGuestConfirmed?: boolean;
+  guestSide?: "groom" | "bride";
   additionalGuests?: Array<{
     id: string;
     name: string;
@@ -37,13 +38,14 @@ type GuestContext = {
       | "colleague"
       | "family_friend"
       | "other";
-    guestSide?: "groom" | "bride";
     relationship?: string;
     personality?: string;
     personalInfo?: string;
     weddingContext?: string;
     deepStuff?: string;
     extraNotes?: string;
+  } & {
+    guestSide?: "groom" | "bride";
   };
 };
 
@@ -110,6 +112,7 @@ function buildSystemPrompt(guest: GuestContext) {
           : "declined",
     mainGuestConfirmed: guest.mainGuestConfirmed,
     additionalGuests: guest.additionalGuests,
+    guestSide: guest.guestSide ?? guest.notesForAI?.guestSide,
     ...guest.notesForAI,
     languageMode,
   });
