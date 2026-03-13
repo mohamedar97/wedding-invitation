@@ -814,6 +814,10 @@ function GuestEditor({
 
         if (mode === "create") {
           const guestId = await createGuest(payload);
+          setDraft((current) => ({
+            ...current,
+            guestId,
+          }));
           await revalidateInvitationPaths({ slug: draft.slug });
           setFeedback("Guest created.");
           onCreated?.(guestId);
