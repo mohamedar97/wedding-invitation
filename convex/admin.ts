@@ -200,9 +200,11 @@ export const createGuest = mutation({
     notesForAI: v.optional(notesForAiValidator),
   },
   handler: async (ctx, args) => {
+    const mainGuestName = args.mainGuestName.trim();
     const slug = args.slug.trim();
+    const phone = args.phone.trim();
 
-    if (!args.mainGuestName.trim()) {
+    if (!mainGuestName) {
       throw new Error("Main guest name is required.");
     }
 
@@ -210,7 +212,7 @@ export const createGuest = mutation({
       throw new Error("Slug is required.");
     }
 
-    if (!args.phone.trim()) {
+    if (!phone) {
       throw new Error("Phone is required.");
     }
 
@@ -224,7 +226,7 @@ export const createGuest = mutation({
     }
 
     return await ctx.db.insert("guests", {
-      mainGuestName: args.mainGuestName.trim(),
+      mainGuestName,
       mainGuestGender: args.mainGuestGender,
       mainGuestAge: args.mainGuestAge,
       mainGuestConfirmed: args.mainGuestConfirmed,
@@ -232,7 +234,7 @@ export const createGuest = mutation({
       additionalGuests: normalizeAdditionalGuests(args.additionalGuests),
       slug,
       email: normalizeOptionalString(args.email),
-      phone: args.phone.trim(),
+      phone,
       preferedLanguage: args.preferedLanguage,
       notesForAI: normalizeNotes(args.notesForAI),
     });

@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 
 type GuestRecord = Doc<"guests">;
 type GenderOption = "male" | "female";
+type InvitationLanguage = "en" | "ar";
 type AdditionalGuestRelationshipOption =
   | "husband"
   | "wife"
@@ -98,7 +99,7 @@ type GuestDraft = {
   phone: string;
   email: string;
   plusOneName: string;
-  preferedLanguage: "en" | "ar";
+  preferedLanguage: "" | InvitationLanguage;
   mainGuestConfirmed: "pending" | "confirmed" | "declined";
   additionalGuests: AdditionalGuestDraft[];
   languageMode: "" | "english" | "arabic" | "franco";
@@ -202,7 +203,7 @@ function createEmptyDraft(): GuestDraft {
     phone: "",
     email: "",
     plusOneName: "",
-    preferedLanguage: "en",
+    preferedLanguage: "",
     mainGuestConfirmed: "pending",
     additionalGuests: [],
     languageMode: "",
@@ -264,6 +265,39 @@ function createDraft(rawGuest: GuestRecord): GuestDraft {
     deepStuff: guest.notesForAI?.deepStuff ?? "",
     extraNotes: guest.notesForAI?.extraNotes ?? "",
   };
+}
+
+function getMinimumValidationError(
+  draft: GuestDraft,
+  existingGuests: GuestRecord[],
+) {
+  if (!draft.mainGuestName.trim()) {
+    return "Main guest name is required.";
+  }
+
+  const slug = draft.slug.trim();
+
+  if (!slug) {
+    return "Slug is required.";
+  }
+
+  const duplicateSlug = existingGuests.some(
+    (guest) => guest._id !== draft.guestId && guest.slug.trim() === slug,
+  );
+
+  if (duplicateSlug) {
+    return "This slug already exists. Please choose a different slug.";
+  }
+
+  if (!draft.phone.trim()) {
+    return "Main guest phone number is required.";
+  }
+
+  if (!draft.preferedLanguage) {
+    return "Choose English invitation or Arabic invitation.";
+  }
+
+  return null;
 }
 
 function statusLabel(guest: GuestRecord) {
@@ -539,6 +573,7 @@ export default function AdminGuestDashboard() {
               <GuestEditor
                 mode="create"
                 initialDraft={createEmptyDraft()}
+                existingGuests={guests}
                 onCreated={(guestId) => {
                   setIsCreatingGuest(false);
                   setSelectedGuestId(guestId);
@@ -556,6 +591,7 @@ export default function AdminGuestDashboard() {
                   key={selectedGuest._id}
                   mode="edit"
                   initialDraft={createDraft(selectedGuest)}
+                  existingGuests={guests}
                 />
               </>
             )}
@@ -569,11 +605,13 @@ export default function AdminGuestDashboard() {
 function GuestEditor({
   initialDraft,
   mode,
+  existingGuests,
   onCreated,
   onCancel,
 }: {
   initialDraft: GuestDraft;
   mode: "create" | "edit";
+  existingGuests: GuestRecord[];
   onCreated?: (guestId: GuestRecord["_id"]) => void;
   onCancel?: () => void;
 }) {
@@ -584,7 +622,7 @@ function GuestEditor({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const rowKeyPrefix = draft.guestId ?? "new-guest";
-  const initialSlug = initialDraft.slug;
+  const minimumValidationError = getMinimumValidationError(draft, existingGuests);
 
   function updateDraft<K extends keyof GuestDraft>(
     key: K,
@@ -598,6 +636,20 @@ function GuestEditor({
   async function handleSave() {
     setFeedback(null);
     setError(null);
+
+    const validationError = getMinimumValidationError(draft, existingGuests);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const preferedLanguage = draft.preferedLanguage;
+
+    if (!preferedLanguage) {
+      setError("Choose English invitation or Arabic invitation.");
+      return;
+    }
 
     const additionalGuests: Array<{
       id: string;
@@ -649,7 +701,7 @@ function GuestEditor({
           phone: draft.phone,
           email: draft.email || undefined,
           plusOneName: draft.plusOneName || undefined,
-          preferedLanguage: draft.preferedLanguage,
+          preferedLanguage,
           mainGuestConfirmed:
             draft.mainGuestConfirmed === "pending"
               ? undefined
@@ -735,6 +787,11 @@ function GuestEditor({
 
   return (
     <>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Required to create an invitation: main guest name, slug, phone number,
+        and invitation language. Everything else is optional.
+      </p>
+
       <section className="grid gap-4 md:grid-cols-2">
         <Input
           value={draft.mainGuestName}
@@ -784,8 +841,8 @@ function GuestEditor({
           placeholder="Email"
         />
         <Select
-          value={draft.preferedLanguage}
-          onValueChange={(value: "en" | "ar") =>
+          value={draft.preferedLanguage || undefined}
+          onValueChange={(value: InvitationLanguage) =>
             updateDraft("preferedLanguage", value)
           }
         >
@@ -1078,7 +1135,11 @@ function GuestEditor({
       </section>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" onClick={handleSave} disabled={isPending}>
+        <Button
+          type="button"
+          onClick={handleSave}
+          disabled={isPending || Boolean(minimumValidationError)}
+        >
           {isPending
             ? mode === "create"
               ? "Creating..."
@@ -1101,6 +1162,9 @@ function GuestEditor({
           <span className="text-sm text-emerald-700">{feedback}</span>
         ) : null}
         {error ? <span className="text-sm text-red-700">{error}</span> : null}
+        {!error && minimumValidationError ? (
+          <span className="text-sm text-red-700">{minimumValidationError}</span>
+        ) : null}
       </div>
     </>
   );
