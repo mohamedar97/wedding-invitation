@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 
+import { revalidateInvitationPaths } from "@/app/admin/actions";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
@@ -778,6 +779,8 @@ function GuestEditor({
 
     startTransition(async () => {
       try {
+        const previousSlug =
+          mode === "edit" ? initialDraft.slug.trim() || undefined : undefined;
         const payload = {
           mainGuestName: draft.mainGuestName,
           mainGuestGender: draft.mainGuestGender || undefined,
@@ -811,6 +814,7 @@ function GuestEditor({
 
         if (mode === "create") {
           const guestId = await createGuest(payload);
+          await revalidateInvitationPaths({ slug: draft.slug });
           setFeedback("Guest created.");
           onCreated?.(guestId);
           return;
@@ -823,6 +827,10 @@ function GuestEditor({
         await updateGuest({
           guestId: draft.guestId,
           ...payload,
+        });
+        await revalidateInvitationPaths({
+          slug: draft.slug,
+          previousSlug,
         });
 
         setFeedback("Saved.");

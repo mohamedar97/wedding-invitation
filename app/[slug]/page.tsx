@@ -4,7 +4,6 @@ import { fetchQuery } from "convex/nextjs";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-static";
-export const dynamicParams = false;
 
 type GuestPageProps = {
   params: Promise<{
