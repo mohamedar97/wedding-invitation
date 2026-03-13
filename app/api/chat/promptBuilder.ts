@@ -1,18 +1,35 @@
 type LanguageMode = "english" | "arabic" | "franco";
 type RSVPStatus = "unknown" | "attending" | "declined" | "maybe";
+type CommunicationStyle = "formal" | "warm" | "casual" | "playful";
+type RelationshipToCouple =
+  | "family"
+  | "friend"
+  | "colleague"
+  | "family_friend"
+  | "other";
+type GuestSide = "groom" | "bride";
 
 interface GuestContext {
   guestName: string;
-  relationshipToCouple?: string;
   languageMode?: LanguageMode;
-  communicationStyle?: string;
+  communicationStyle?: CommunicationStyle;
+  relationshipToCouple?: RelationshipToCouple;
+  guestSide?: GuestSide;
+  relationship?: string;
+  personality?: string;
+  personalInfo?: string;
+  weddingContext?: string;
+  deepStuff?: string;
   rsvpStatus?: RSVPStatus;
+  mainGuestGender?: "male" | "female";
+  mainGuestAge?: number;
   mainGuestConfirmed?: boolean;
   additionalGuests?: Array<{
     id?: string;
     name: string;
     relationshipToGuest?: string;
     gender?: string;
+    age?: number;
     confirmed?: boolean;
     confirmedAt?: string;
   }>;
@@ -51,6 +68,9 @@ const boolText = (value?: boolean): string => {
   if (value === false) return "No";
   return "Unknown";
 };
+
+const humanizeValue = (value?: string): string | undefined =>
+  value ? value.replaceAll("_", " ") : undefined;
 
 export function buildZaynPrompt(guest: GuestContext): string {
   const languageMode = guest.languageMode ?? "english";
@@ -104,6 +124,11 @@ Language behavior:
 - If the guest writes in another language, mirror that language naturally.
 - If the guest uses mixed language, respond in the same mixed style unless a
   clearer language preference has been established.
+- The preferred communication style for this guest is: ${
+    guest.communicationStyle ?? "warm"
+  }.
+- Mirror that communication style unless the live conversation clearly suggests
+  something else.
 
 Personalization rules:
 - Address the guest naturally as "${guest.guestName}" when useful, but do not
@@ -115,8 +140,10 @@ Personalization rules:
   the conversation feel personal, familiar, attentive, and specifically about
   this guest.
 - Actively weave in relevant details from the guest context when they help the
-  reply feel more personal, such as preferred name, relationship to the couple,
-  communication style, RSVP context, plus-one details, or extra notes.
+  reply feel more personal, such as which side of the wedding they are on,
+  relationship to the couple,
+  relationship notes, personality, personal background, wedding context, deep
+  personal context, RSVP context, plus-one details, or extra notes.
 - If the guest sends a broad or casual message, use the available guest context
   to make the reply feel custom instead of generic.
 - If the guest asks about a personal detail that appears in the guest context,
@@ -125,6 +152,7 @@ Personalization rules:
   exists in the guest context below.
 - Never fabricate shared memories, inside jokes, or relationship details.
 - If context is incomplete, stay warm without pretending to know more.
+
 
 Operational rules:
 - If the guest asks about timing, venue, dress code, travel, accommodation,
@@ -202,13 +230,23 @@ ${toBulletList([
 Guest context:
 ${toBulletList([
   `Guest name: ${guest.guestName}`,
-  guest.relationshipToCouple
-    ? `Relationship to couple: ${guest.relationshipToCouple}`
-    : undefined,
   `Language mode: ${guest.languageMode}`,
   guest.communicationStyle
     ? `Communication style: ${guest.communicationStyle}`
     : undefined,
+  guest.guestSide ? `Guest side: ${guest.guestSide}` : undefined,
+  guest.relationshipToCouple
+    ? `Relationship to couple: ${humanizeValue(guest.relationshipToCouple)}`
+    : undefined,
+  guest.mainGuestGender ? `Main guest gender: ${guest.mainGuestGender}` : undefined,
+  guest.mainGuestAge !== undefined ? `Main guest age: ${guest.mainGuestAge}` : undefined,
+  guest.relationship ? `Relationship notes: ${guest.relationship}` : undefined,
+  guest.personality ? `Personality notes: ${guest.personality}` : undefined,
+  guest.personalInfo ? `Personal info: ${guest.personalInfo}` : undefined,
+  guest.weddingContext
+    ? `Wedding context: ${guest.weddingContext}`
+    : undefined,
+  guest.deepStuff ? `Deep personal context: ${guest.deepStuff}` : undefined,
   guest.rsvpStatus ? `RSVP status: ${guest.rsvpStatus}` : undefined,
   `Main guest confirmed: ${boolText(guest.mainGuestConfirmed)}`,
   guest.additionalGuests?.length
@@ -222,8 +260,11 @@ ${toBulletList([
                 : "declined";
           const details = [
             additionalGuest.id ? `id: ${additionalGuest.id}` : undefined,
-            additionalGuest.relationshipToGuest,
+            additionalGuest.relationshipToGuest
+              ? humanizeValue(additionalGuest.relationshipToGuest)
+              : undefined,
             additionalGuest.gender,
+            additionalGuest.age !== undefined ? `age: ${additionalGuest.age}` : undefined,
             status,
           ]
             .filter(Boolean)

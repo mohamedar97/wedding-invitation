@@ -26,11 +26,64 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 type GuestRecord = Doc<"guests">;
+type GenderOption = "male" | "female";
+type AdditionalGuestRelationshipOption =
+  | "husband"
+  | "wife"
+  | "son"
+  | "daughter"
+  | "brother"
+  | "sister"
+  | "father"
+  | "mother"
+  | "friend"
+  | "colleague"
+  | "other";
+type CommunicationStyleOption = "formal" | "warm" | "casual" | "playful";
+type RelationshipToCoupleOption =
+  | "family"
+  | "friend"
+  | "colleague"
+  | "family_friend"
+  | "other";
+type GuestSideOption = "groom" | "bride";
+type GuestNotesForAI = {
+  languageMode?: "" | "english" | "arabic" | "franco";
+  communicationStyle?: "" | CommunicationStyleOption;
+  relationshipToCouple?: "" | RelationshipToCoupleOption;
+  guestSide?: "" | GuestSideOption;
+  relationship?: string;
+  personality?: string;
+  personalInfo?: string;
+  weddingContext?: string;
+  deepStuff?: string;
+  extraNotes?: string;
+};
+type GuestRecordWithLocalFields = GuestRecord & {
+  mainGuestGender?: GenderOption;
+  mainGuestAge?: number;
+  additionalGuests?: Array<
+    GuestRecord["additionalGuests"] extends Array<infer T>
+      ? T & { age?: number }
+      : {
+          id: string;
+          name: string;
+          relationshipToGuest: AdditionalGuestRelationshipOption;
+          gender: GenderOption;
+          age?: number;
+          confirmed?: boolean;
+          confirmedAt?: string;
+        }
+  >;
+  notesForAI?: GuestNotesForAI;
+};
+
 type AdditionalGuestDraft = {
   id: string;
   name: string;
-  relationshipToGuest: string;
-  gender: string;
+  relationshipToGuest: "" | AdditionalGuestRelationshipOption;
+  gender: "" | GenderOption;
+  age: string;
   confirmed: "pending" | "confirmed" | "declined";
   confirmedAt: string;
 };
@@ -39,6 +92,8 @@ type MessageRecord = Doc<"messages">;
 type GuestDraft = {
   guestId?: GuestRecord["_id"];
   mainGuestName: string;
+  mainGuestGender: "" | GenderOption;
+  mainGuestAge: string;
   slug: string;
   phone: string;
   email: string;
@@ -46,11 +101,82 @@ type GuestDraft = {
   preferedLanguage: "en" | "ar";
   mainGuestConfirmed: "pending" | "confirmed" | "declined";
   additionalGuests: AdditionalGuestDraft[];
-  relationshipToCouple: string;
   languageMode: "" | "english" | "arabic" | "franco";
-  communicationStyle: string;
+  communicationStyle: "" | CommunicationStyleOption;
+  relationshipToCouple: "" | RelationshipToCoupleOption;
+  guestSide: "" | GuestSideOption;
+  relationship: string;
+  personality: string;
+  personalInfo: string;
+  weddingContext: string;
+  deepStuff: string;
   extraNotes: string;
 };
+
+const ADDITIONAL_GUEST_RELATIONSHIP_OPTIONS: Array<{
+  value: AdditionalGuestRelationshipOption;
+  label: string;
+}> = [
+  { value: "husband", label: "Husband" },
+  { value: "wife", label: "Wife" },
+  { value: "son", label: "Son" },
+  { value: "daughter", label: "Daughter" },
+  { value: "brother", label: "Brother" },
+  { value: "sister", label: "Sister" },
+  { value: "father", label: "Father" },
+  { value: "mother", label: "Mother" },
+  { value: "friend", label: "Friend" },
+  { value: "colleague", label: "Colleague" },
+  { value: "other", label: "Other" },
+];
+
+const RELATIONSHIP_TO_COUPLE_OPTIONS: Array<{
+  value: RelationshipToCoupleOption;
+  label: string;
+}> = [
+  { value: "family", label: "Family" },
+  { value: "friend", label: "Friend" },
+  { value: "colleague", label: "Colleague" },
+  { value: "family_friend", label: "Family friend" },
+  { value: "other", label: "Other" },
+];
+
+const GUEST_SIDE_OPTIONS: Array<{ value: GuestSideOption; label: string }> = [
+  { value: "groom", label: "Groom side" },
+  { value: "bride", label: "Bride side" },
+];
+
+const COMMUNICATION_STYLE_OPTIONS: Array<{
+  value: CommunicationStyleOption;
+  label: string;
+}> = [
+  { value: "formal", label: "Formal" },
+  { value: "warm", label: "Warm" },
+  { value: "casual", label: "Casual" },
+  { value: "playful", label: "Playful" },
+];
+
+function NotesTextarea({
+  label,
+  helperQuestions,
+  value,
+  onChange,
+}: {
+  label: string;
+  helperQuestions: string[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium">{label}</label>
+      <Textarea value={value} onChange={(event) => onChange(event.target.value)} />
+      <p className="text-xs leading-5 text-muted-foreground">
+        Try thinking about: {helperQuestions.join(" ")}
+      </p>
+    </div>
+  );
+}
 
 function createAdditionalGuestDraft(): AdditionalGuestDraft {
   return {
@@ -58,6 +184,7 @@ function createAdditionalGuestDraft(): AdditionalGuestDraft {
     name: "",
     relationshipToGuest: "",
     gender: "",
+    age: "",
     confirmed: "pending",
     confirmedAt: "",
   };
@@ -66,6 +193,8 @@ function createAdditionalGuestDraft(): AdditionalGuestDraft {
 function createEmptyDraft(): GuestDraft {
   return {
     mainGuestName: "",
+    mainGuestGender: "",
+    mainGuestAge: "",
     slug: "",
     phone: "",
     email: "",
@@ -73,17 +202,27 @@ function createEmptyDraft(): GuestDraft {
     preferedLanguage: "en",
     mainGuestConfirmed: "pending",
     additionalGuests: [],
-    relationshipToCouple: "",
     languageMode: "",
     communicationStyle: "",
+    relationshipToCouple: "",
+    guestSide: "",
+    relationship: "",
+    personality: "",
+    personalInfo: "",
+    weddingContext: "",
+    deepStuff: "",
     extraNotes: "",
   };
 }
 
-function createDraft(guest: GuestRecord): GuestDraft {
+function createDraft(rawGuest: GuestRecord): GuestDraft {
+  const guest = rawGuest as GuestRecordWithLocalFields;
   return {
     guestId: guest._id,
     mainGuestName: guest.mainGuestName,
+    mainGuestGender: guest.mainGuestGender ?? "",
+    mainGuestAge:
+      guest.mainGuestAge !== undefined ? String(guest.mainGuestAge) : "",
     slug: guest.slug,
     phone: guest.phone,
     email: guest.email ?? "",
@@ -101,6 +240,7 @@ function createDraft(guest: GuestRecord): GuestDraft {
         name: additionalGuest.name,
         relationshipToGuest: additionalGuest.relationshipToGuest,
         gender: additionalGuest.gender,
+        age: additionalGuest.age !== undefined ? String(additionalGuest.age) : "",
         confirmed:
           additionalGuest.confirmed === true
             ? "confirmed"
@@ -109,10 +249,15 @@ function createDraft(guest: GuestRecord): GuestDraft {
               : "pending",
         confirmedAt: additionalGuest.confirmedAt ?? "",
       })) ?? [],
-    relationshipToCouple: guest.notesForAI?.relationshipToCouple ?? "",
     languageMode: guest.notesForAI?.languageMode ?? "",
     communicationStyle: guest.notesForAI?.communicationStyle ?? "",
-
+    relationshipToCouple: guest.notesForAI?.relationshipToCouple ?? "",
+    guestSide: guest.notesForAI?.guestSide ?? "",
+    relationship: guest.notesForAI?.relationship ?? "",
+    personality: guest.notesForAI?.personality ?? "",
+    personalInfo: guest.notesForAI?.personalInfo ?? "",
+    weddingContext: guest.notesForAI?.weddingContext ?? "",
+    deepStuff: guest.notesForAI?.deepStuff ?? "",
     extraNotes: guest.notesForAI?.extraNotes ?? "",
   };
 }
@@ -448,30 +593,49 @@ function GuestEditor({
     setFeedback(null);
     setError(null);
 
-    const additionalGuests = draft.additionalGuests
-      .map((additionalGuest) => ({
-        id: additionalGuest.id.trim(),
-        name: additionalGuest.name.trim(),
-        relationshipToGuest: additionalGuest.relationshipToGuest.trim(),
-        gender: additionalGuest.gender.trim(),
+    const additionalGuests: Array<{
+      id: string;
+      name: string;
+      relationshipToGuest: AdditionalGuestRelationshipOption;
+      gender: GenderOption;
+      age?: number;
+      confirmed?: boolean;
+      confirmedAt?: string;
+    }> = [];
+
+    for (const additionalGuest of draft.additionalGuests) {
+      const id = additionalGuest.id.trim();
+      const name = additionalGuest.name.trim();
+
+      if (
+        !id ||
+        !name ||
+        !additionalGuest.relationshipToGuest ||
+        !additionalGuest.gender
+      ) {
+        continue;
+      }
+
+      additionalGuests.push({
+        id,
+        name,
+        relationshipToGuest: additionalGuest.relationshipToGuest,
+        gender: additionalGuest.gender,
+        age: additionalGuest.age ? Number(additionalGuest.age) : undefined,
         confirmed:
           additionalGuest.confirmed === "pending"
             ? undefined
             : additionalGuest.confirmed === "confirmed",
         confirmedAt: additionalGuest.confirmedAt.trim() || undefined,
-      }))
-      .filter(
-        (additionalGuest) =>
-          additionalGuest.id &&
-          additionalGuest.name &&
-          additionalGuest.relationshipToGuest &&
-          additionalGuest.gender,
-      );
+      });
+    }
 
     startTransition(async () => {
       try {
         const payload = {
           mainGuestName: draft.mainGuestName,
+          mainGuestGender: draft.mainGuestGender || undefined,
+          mainGuestAge: draft.mainGuestAge ? Number(draft.mainGuestAge) : undefined,
           slug: draft.slug,
           phone: draft.phone,
           email: draft.email || undefined,
@@ -484,9 +648,15 @@ function GuestEditor({
           additionalGuests:
             additionalGuests.length > 0 ? additionalGuests : undefined,
           notesForAI: {
-            relationshipToCouple: draft.relationshipToCouple || undefined,
             languageMode: draft.languageMode || undefined,
             communicationStyle: draft.communicationStyle || undefined,
+            relationshipToCouple: draft.relationshipToCouple || undefined,
+            guestSide: draft.guestSide || undefined,
+            relationship: draft.relationship || undefined,
+            personality: draft.personality || undefined,
+            personalInfo: draft.personalInfo || undefined,
+            weddingContext: draft.weddingContext || undefined,
+            deepStuff: draft.deepStuff || undefined,
             extraNotes: draft.extraNotes || undefined,
           },
         };
@@ -561,6 +731,28 @@ function GuestEditor({
           value={draft.mainGuestName}
           onChange={(event) => updateDraft("mainGuestName", event.target.value)}
           placeholder="Main guest name"
+        />
+        <Select
+          value={draft.mainGuestGender || undefined}
+          onValueChange={(value: GenderOption) =>
+            updateDraft("mainGuestGender", value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Main guest gender" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="male">Male</SelectItem>
+            <SelectItem value="female">Female</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input
+          type="number"
+          min="0"
+          inputMode="numeric"
+          value={draft.mainGuestAge}
+          onChange={(event) => updateDraft("mainGuestAge", event.target.value)}
+          placeholder="Main guest age"
         />
         <Input
           value={draft.plusOneName}
@@ -641,23 +833,46 @@ function GuestEditor({
                     }
                     placeholder="Guest name"
                   />
-                  <Input
-                    value={additionalGuest.relationshipToGuest}
-                    onChange={(event) =>
-                      updateAdditionalGuest(
-                        index,
-                        "relationshipToGuest",
-                        event.target.value,
-                      )
+                  <Select
+                    value={additionalGuest.relationshipToGuest || undefined}
+                    onValueChange={(value: AdditionalGuestRelationshipOption) =>
+                      updateAdditionalGuest(index, "relationshipToGuest", value)
                     }
-                    placeholder="Relationship to guest"
-                  />
-                  <Input
-                    value={additionalGuest.gender}
-                    onChange={(event) =>
-                      updateAdditionalGuest(index, "gender", event.target.value)
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Relationship to main guest" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ADDITIONAL_GUEST_RELATIONSHIP_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={additionalGuest.gender || undefined}
+                    onValueChange={(value: GenderOption) =>
+                      updateAdditionalGuest(index, "gender", value)
                     }
-                    placeholder="Gender"
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min="0"
+                    inputMode="numeric"
+                    value={additionalGuest.age}
+                    onChange={(event) =>
+                      updateAdditionalGuest(index, "age", event.target.value)
+                    }
+                    placeholder="Age"
                   />
                   <Select
                     value={additionalGuest.confirmed}
@@ -705,13 +920,6 @@ function GuestEditor({
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <Input
-          value={draft.relationshipToCouple}
-          onChange={(event) =>
-            updateDraft("relationshipToCouple", event.target.value)
-          }
-          placeholder="Relationship to couple"
-        />
         <Select
           value={draft.languageMode || undefined}
           onValueChange={(value: GuestDraft["languageMode"]) =>
@@ -727,18 +935,135 @@ function GuestEditor({
             <SelectItem value="franco">Franco</SelectItem>
           </SelectContent>
         </Select>
-        <Input
-          value={draft.communicationStyle}
-          onChange={(event) =>
-            updateDraft("communicationStyle", event.target.value)
+        <Select
+          value={draft.communicationStyle || undefined}
+          onValueChange={(value: CommunicationStyleOption) =>
+            updateDraft("communicationStyle", value)
           }
-          placeholder="Communication style"
-        />
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="AI communication style" />
+          </SelectTrigger>
+          <SelectContent>
+            {COMMUNICATION_STYLE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={draft.guestSide || undefined}
+          onValueChange={(value: GuestSideOption) =>
+            updateDraft("guestSide", value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Guest side" />
+          </SelectTrigger>
+          <SelectContent>
+            {GUEST_SIDE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <div className="md:col-span-2">
-          <label className="mb-2 block text-sm font-medium">Extra notes</label>
-          <Textarea
+          <Select
+            value={draft.relationshipToCouple || undefined}
+            onValueChange={(value: RelationshipToCoupleOption) =>
+              updateDraft("relationshipToCouple", value)
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Relationship to bride / groom" />
+            </SelectTrigger>
+            <SelectContent>
+              {RELATIONSHIP_TO_COUPLE_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="md:col-span-2">
+          <NotesTextarea
+            label="Relationship"
+            value={draft.relationship}
+            onChange={(value) => updateDraft("relationship", value)}
+            helperQuestions={[
+              "How do you know them?",
+              "How long have you known them?",
+              "How close are you?",
+              "Why was it important to invite them?",
+            ]}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <NotesTextarea
+            label="Personality"
+            value={draft.personality}
+            onChange={(value) => updateDraft("personality", value)}
+            helperQuestions={[
+              "How would you describe their personality?",
+              "What kind of humor do they enjoy?",
+              "Are they talkative, quiet, sarcastic, playful, or shy?",
+              "What usually makes them laugh?",
+            ]}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <NotesTextarea
+            label="Personal Information"
+            value={draft.personalInfo}
+            onChange={(value) => updateDraft("personalInfo", value)}
+            helperQuestions={[
+              "What do they do for work or study?",
+              "Where do they live now?",
+              "Are they single, dating, engaged, or married?",
+              "Any recent big life events or hobbies?",
+            ]}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <NotesTextarea
+            label="Deep Stuff"
+            value={draft.deepStuff}
+            onChange={(value) => updateDraft("deepStuff", value)}
+            helperQuestions={[
+              "What role have they played in your life?",
+              "Have they supported you in meaningful moments?",
+              "What shared memory, inside joke, or unique detail feels very 'them'?",
+              "What would you genuinely want to say to them at the wedding?",
+            ]}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <NotesTextarea
+            label="Wedding Context"
+            value={draft.weddingContext}
+            onChange={(value) => updateDraft("weddingContext", value)}
+            helperQuestions={[
+              "How are they connected to the wedding?",
+              "Are they traveling to attend?",
+              "Are they bringing someone?",
+              "Who are they likely to interact with there?",
+              "Is there anything special about their attendance?",
+            ]}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <NotesTextarea
+            label="Extra Notes"
             value={draft.extraNotes}
-            onChange={(event) => updateDraft("extraNotes", event.target.value)}
+            onChange={(value) => updateDraft("extraNotes", value)}
+            helperQuestions={[
+              "Anything else the AI should know to talk naturally?",
+              "Who else will they likely interact with at the wedding?",
+              "Are they bringing someone or traveling to attend?",
+            ]}
           />
         </div>
       </section>

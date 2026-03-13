@@ -14,12 +14,15 @@ type GuestContext = {
   _id: string;
   slug: string;
   mainGuestName: string;
+  mainGuestGender?: "male" | "female";
+  mainGuestAge?: number;
   mainGuestConfirmed?: boolean;
   additionalGuests?: Array<{
     id: string;
     name: string;
     relationshipToGuest: string;
     gender: string;
+    age?: number;
     confirmed?: boolean;
     confirmedAt?: string;
   }>;
@@ -27,8 +30,19 @@ type GuestContext = {
   phone: string;
   notesForAI?: {
     languageMode?: LanguageMode;
-    relationshipToCouple?: string;
-    communicationStyle?: string;
+    communicationStyle?: "formal" | "warm" | "casual" | "playful";
+    relationshipToCouple?:
+      | "family"
+      | "friend"
+      | "colleague"
+      | "family_friend"
+      | "other";
+    guestSide?: "groom" | "bride";
+    relationship?: string;
+    personality?: string;
+    personalInfo?: string;
+    weddingContext?: string;
+    deepStuff?: string;
     extraNotes?: string;
   };
 };
@@ -86,6 +100,8 @@ function buildSystemPrompt(guest: GuestContext) {
 
   return buildZaynPrompt({
     guestName: guest.mainGuestName,
+    mainGuestGender: guest.mainGuestGender,
+    mainGuestAge: guest.mainGuestAge,
     rsvpStatus:
       guest.mainGuestConfirmed === undefined
         ? "unknown"
