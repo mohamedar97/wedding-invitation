@@ -170,7 +170,10 @@ function NotesTextarea({
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium">{label}</label>
-      <Textarea value={value} onChange={(event) => onChange(event.target.value)} />
+      <Textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
       <p className="text-xs leading-5 text-muted-foreground">
         Try thinking about: {helperQuestions.join(" ")}
       </p>
@@ -240,7 +243,8 @@ function createDraft(rawGuest: GuestRecord): GuestDraft {
         name: additionalGuest.name,
         relationshipToGuest: additionalGuest.relationshipToGuest,
         gender: additionalGuest.gender,
-        age: additionalGuest.age !== undefined ? String(additionalGuest.age) : "",
+        age:
+          additionalGuest.age !== undefined ? String(additionalGuest.age) : "",
         confirmed:
           additionalGuest.confirmed === true
             ? "confirmed"
@@ -408,8 +412,9 @@ export default function AdminGuestDashboard() {
       [
         guest.mainGuestName,
         guest.plusOneName,
-        ...(guest.additionalGuests?.map((additionalGuest) => additionalGuest.name) ??
-          []),
+        ...(guest.additionalGuests?.map(
+          (additionalGuest) => additionalGuest.name,
+        ) ?? []),
         guest.slug,
         guest.phone,
         guest.email,
@@ -579,6 +584,7 @@ function GuestEditor({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const rowKeyPrefix = draft.guestId ?? "new-guest";
+  const initialSlug = initialDraft.slug;
 
   function updateDraft<K extends keyof GuestDraft>(
     key: K,
@@ -604,8 +610,9 @@ function GuestEditor({
     }> = [];
 
     for (const additionalGuest of draft.additionalGuests) {
-      const id = additionalGuest.id.trim();
-      const name = additionalGuest.name.trim();
+      const id = additionalGuest.id?.trim() ?? "";
+      const name = additionalGuest.name?.trim() ?? "";
+      const confirmedAt = additionalGuest.confirmedAt?.trim() || undefined;
 
       if (
         !id ||
@@ -626,7 +633,7 @@ function GuestEditor({
           additionalGuest.confirmed === "pending"
             ? undefined
             : additionalGuest.confirmed === "confirmed",
-        confirmedAt: additionalGuest.confirmedAt.trim() || undefined,
+        confirmedAt,
       });
     }
 
@@ -635,7 +642,9 @@ function GuestEditor({
         const payload = {
           mainGuestName: draft.mainGuestName,
           mainGuestGender: draft.mainGuestGender || undefined,
-          mainGuestAge: draft.mainGuestAge ? Number(draft.mainGuestAge) : undefined,
+          mainGuestAge: draft.mainGuestAge
+            ? Number(draft.mainGuestAge)
+            : undefined,
           slug: draft.slug,
           phone: draft.phone,
           email: draft.email || undefined,

@@ -255,16 +255,41 @@ export const updateGuest = mutation({
     notesForAI: v.optional(notesForAiValidator),
   },
   handler: async (ctx, args) => {
+    const mainGuestName = args.mainGuestName.trim();
+    const slug = args.slug.trim();
+    const phone = args.phone.trim();
+
+    if (!mainGuestName) {
+      throw new Error("Main guest name is required.");
+    }
+
+    if (!slug) {
+      throw new Error("Slug is required.");
+    }
+
+    if (!phone) {
+      throw new Error("Phone is required.");
+    }
+
+    const existingGuest = await ctx.db
+      .query("guests")
+      .withIndex("by_slug", (q) => q.eq("slug", slug))
+      .first();
+
+    if (existingGuest && existingGuest._id !== args.guestId) {
+      throw new Error("A guest with this slug already exists.");
+    }
+
     await ctx.db.patch(args.guestId, {
-      mainGuestName: args.mainGuestName.trim(),
+      mainGuestName,
       mainGuestGender: args.mainGuestGender,
       mainGuestAge: args.mainGuestAge,
       mainGuestConfirmed: args.mainGuestConfirmed,
       plusOneName: normalizeOptionalString(args.plusOneName),
       additionalGuests: normalizeAdditionalGuests(args.additionalGuests),
-      slug: args.slug.trim(),
+      slug,
       email: normalizeOptionalString(args.email),
-      phone: args.phone.trim(),
+      phone,
       preferedLanguage: args.preferedLanguage,
       notesForAI: normalizeNotes(args.notesForAI),
     });
