@@ -416,15 +416,6 @@ function InitiateConversationButton({
 
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
-      <Button
-        type="button"
-        variant={variant}
-        size={size}
-        onClick={handleInitiate}
-        disabled={isPending}
-      >
-        {isPending ? "Sending..." : "Initiate conversation"}
-      </Button>
       {feedback ? (
         <span className="text-xs text-emerald-700">{feedback}</span>
       ) : null}
@@ -480,7 +471,8 @@ export default function AdminGuestDashboard() {
     GuestRecord["_id"] | null
   >(null);
   const [search, setSearch] = useState("");
-  const [guestSideFilter, setGuestSideFilter] = useState<GuestSideFilter>("all");
+  const [guestSideFilter, setGuestSideFilter] =
+    useState<GuestSideFilter>("all");
 
   const filteredGuests = useMemo(() => {
     if (!guests) {
@@ -597,7 +589,7 @@ export default function AdminGuestDashboard() {
                   className={cn(
                     "rounded-lg border px-3 py-3 transition-colors",
                     guest._id === activeGuestId
-                      ? "border-stone-900 bg-stone-950 text-stone-50"
+                      ? "border-2 border-stone-500 bg-stone-100 shadow-sm"
                       : "border-stone-200 bg-stone-50 hover:bg-stone-100",
                   )}
                 >
@@ -714,7 +706,10 @@ function GuestEditor({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const rowKeyPrefix = draft.guestId ?? "new-guest";
-  const minimumValidationError = getMinimumValidationError(draft, existingGuests);
+  const minimumValidationError = getMinimumValidationError(
+    draft,
+    existingGuests,
+  );
 
   function updateDraft<K extends keyof GuestDraft>(
     key: K,
@@ -999,7 +994,9 @@ function GuestEditor({
             min="0"
             inputMode="numeric"
             value={draft.mainGuestAge}
-            onChange={(event) => updateDraft("mainGuestAge", event.target.value)}
+            onChange={(event) =>
+              updateDraft("mainGuestAge", event.target.value)
+            }
             placeholder="Main guest age"
           />
           <Input
@@ -1059,8 +1056,14 @@ function GuestEditor({
                     />
                     <Select
                       value={additionalGuest.relationshipToGuest || undefined}
-                      onValueChange={(value: AdditionalGuestRelationshipOption) =>
-                        updateAdditionalGuest(index, "relationshipToGuest", value)
+                      onValueChange={(
+                        value: AdditionalGuestRelationshipOption,
+                      ) =>
+                        updateAdditionalGuest(
+                          index,
+                          "relationshipToGuest",
+                          value,
+                        )
                       }
                     >
                       <SelectTrigger className="w-full">
@@ -1100,9 +1103,9 @@ function GuestEditor({
                     />
                     <Select
                       value={additionalGuest.confirmed}
-                      onValueChange={(value: AdditionalGuestDraft["confirmed"]) =>
-                        updateAdditionalGuest(index, "confirmed", value)
-                      }
+                      onValueChange={(
+                        value: AdditionalGuestDraft["confirmed"],
+                      ) => updateAdditionalGuest(index, "confirmed", value)}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="RSVP status" />
