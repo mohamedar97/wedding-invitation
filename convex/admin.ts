@@ -203,6 +203,7 @@ export const createGuest = mutation({
     const mainGuestName = args.mainGuestName.trim();
     const slug = args.slug.trim();
     const phone = args.phone.trim();
+    const guestSide = args.notesForAI?.guestSide;
 
     if (!mainGuestName) {
       throw new Error("Main guest name is required.");
@@ -214,6 +215,10 @@ export const createGuest = mutation({
 
     if (!phone) {
       throw new Error("Phone is required.");
+    }
+
+    if (!guestSide) {
+      throw new Error("Guest side is required.");
     }
 
     const existingGuest = await ctx.db
@@ -260,6 +265,7 @@ export const updateGuest = mutation({
     const mainGuestName = args.mainGuestName.trim();
     const slug = args.slug.trim();
     const phone = args.phone.trim();
+    const guestSide = args.notesForAI?.guestSide;
 
     if (!mainGuestName) {
       throw new Error("Main guest name is required.");
@@ -271,6 +277,10 @@ export const updateGuest = mutation({
 
     if (!phone) {
       throw new Error("Phone is required.");
+    }
+
+    if (!guestSide) {
+      throw new Error("Guest side is required.");
     }
 
     const existingGuest = await ctx.db

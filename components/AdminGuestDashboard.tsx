@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { CheckIcon, CopyIcon } from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
@@ -48,6 +49,7 @@ type RelationshipToCoupleOption =
   | "family_friend"
   | "other";
 type GuestSideOption = "groom" | "bride";
+type GuestSideFilter = "all" | GuestSideOption;
 type GuestNotesForAI = {
   languageMode?: "" | "english" | "arabic" | "franco";
   communicationStyle?: "" | CommunicationStyleOption;
@@ -297,7 +299,15 @@ function getMinimumValidationError(
     return "Choose English invitation or Arabic invitation.";
   }
 
+  if (!draft.guestSide) {
+    return "Guest side is required.";
+  }
+
   return null;
+}
+
+function getGuestSideLabel(side: GuestSideOption) {
+  return side === "groom" ? "Groom side" : "Bride side";
 }
 
 function statusLabel(guest: GuestRecord) {
@@ -423,6 +433,46 @@ function InitiateConversationButton({
   );
 }
 
+function CopyInvitationLinkButton({
+  slug,
+  className,
+}: {
+  slug: string;
+  className?: string;
+}) {
+  const [feedback, setFeedback] = useState<"idle" | "copied" | "error">("idle");
+
+  async function handleCopy() {
+    const invitationUrl = `${window.location.origin}/${slug}`;
+
+    try {
+      await navigator.clipboard.writeText(invitationUrl);
+      setFeedback("copied");
+      window.setTimeout(() => setFeedback("idle"), 2000);
+    } catch {
+      setFeedback("error");
+      window.setTimeout(() => setFeedback("idle"), 2500);
+    }
+  }
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={handleCopy}
+      className={className}
+    >
+      {feedback === "copied" ? <CheckIcon /> : <CopyIcon />}
+      {feedback === "copied"
+        ? "Copied"
+        : feedback === "error"
+          ? "Copy failed"
+          : "Copy link"}
+    </Button>
+  );
+}
+
 export default function AdminGuestDashboard() {
   const guests = useQuery(api.admin.listGuests, {});
   const [isCreatingGuest, setIsCreatingGuest] = useState(false);
@@ -430,6 +480,7 @@ export default function AdminGuestDashboard() {
     GuestRecord["_id"] | null
   >(null);
   const [search, setSearch] = useState("");
+  const [guestSideFilter, setGuestSideFilter] = useState<GuestSideFilter>("all");
 
   const filteredGuests = useMemo(() => {
     if (!guests) {
@@ -438,12 +489,20 @@ export default function AdminGuestDashboard() {
 
     const query = search.trim().toLowerCase();
 
-    if (!query) {
-      return guests;
-    }
+    return guests.filter((guest) => {
+      const matchesGuestSide =
+        guestSideFilter === "all" ||
+        guest.notesForAI?.guestSide === guestSideFilter;
 
-    return guests.filter((guest) =>
-      [
+      if (!matchesGuestSide) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      return [
         guest.mainGuestName,
         guest.plusOneName,
         ...(guest.additionalGuests?.map(
@@ -454,9 +513,9 @@ export default function AdminGuestDashboard() {
         guest.email,
       ]
         .filter(Boolean)
-        .some((value) => value!.toLowerCase().includes(query)),
-    );
-  }, [guests, search]);
+        .some((value) => value!.toLowerCase().includes(query));
+    });
+  }, [guests, guestSideFilter, search]);
 
   const selectedGuest = isCreatingGuest
     ? null
@@ -503,6 +562,32 @@ export default function AdminGuestDashboard() {
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search by name, slug, phone"
             />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={guestSideFilter === "all" ? "default" : "outline"}
+                onClick={() => setGuestSideFilter("all")}
+              >
+                All sides
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={guestSideFilter === "groom" ? "default" : "outline"}
+                onClick={() => setGuestSideFilter("groom")}
+              >
+                Groom side
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={guestSideFilter === "bride" ? "default" : "outline"}
+                onClick={() => setGuestSideFilter("bride")}
+              >
+                Bride side
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-2">
             {filteredGuests.length ? (
@@ -537,14 +622,21 @@ export default function AdminGuestDashboard() {
                       </Badge>
                     </div>
                     <div className="mt-1 text-xs opacity-75">{guest.slug}</div>
+                    {guest.notesForAI?.guestSide ? (
+                      <div className="mt-2 text-xs opacity-75">
+                        {getGuestSideLabel(guest.notesForAI.guestSide)}
+                      </div>
+                    ) : null}
                   </button>
-                  <InitiateConversationButton
-                    guest={guest}
-                    className="mt-3"
-                    variant={
-                      guest._id === activeGuestId ? "default" : "outline"
-                    }
-                  />
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <InitiateConversationButton
+                      guest={guest}
+                      variant={
+                        guest._id === activeGuestId ? "default" : "outline"
+                      }
+                    />
+                    <CopyInvitationLinkButton slug={guest.slug} />
+                  </div>
                 </div>
               ))
             ) : (
@@ -789,198 +881,265 @@ function GuestEditor({
     <>
       <p className="mb-4 text-sm text-muted-foreground">
         Required to create an invitation: main guest name, slug, phone number,
-        and invitation language. Everything else is optional.
+        invitation language, and guest side. Everything else is optional.
       </p>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <Input
-          value={draft.mainGuestName}
-          onChange={(event) => updateDraft("mainGuestName", event.target.value)}
-          placeholder="Main guest name"
-        />
-        <Select
-          value={draft.mainGuestGender || undefined}
-          onValueChange={(value: GenderOption) =>
-            updateDraft("mainGuestGender", value)
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Main guest gender" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="male">Male</SelectItem>
-            <SelectItem value="female">Female</SelectItem>
-          </SelectContent>
-        </Select>
-        <Input
-          type="number"
-          min="0"
-          inputMode="numeric"
-          value={draft.mainGuestAge}
-          onChange={(event) => updateDraft("mainGuestAge", event.target.value)}
-          placeholder="Main guest age"
-        />
-        <Input
-          value={draft.plusOneName}
-          onChange={(event) => updateDraft("plusOneName", event.target.value)}
-          placeholder="Plus-one name"
-        />
-        <Input
-          value={draft.slug}
-          onChange={(event) => updateDraft("slug", event.target.value)}
-          placeholder="Slug"
-        />
-        <Input
-          value={draft.phone}
-          onChange={(event) => updateDraft("phone", event.target.value)}
-          placeholder="Phone"
-        />
-        <Input
-          value={draft.email}
-          onChange={(event) => updateDraft("email", event.target.value)}
-          placeholder="Email"
-        />
-        <Select
-          value={draft.preferedLanguage || undefined}
-          onValueChange={(value: InvitationLanguage) =>
-            updateDraft("preferedLanguage", value)
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Preferred invitation language" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="en">English invitation</SelectItem>
-            <SelectItem value="ar">Arabic invitation</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="md:col-span-2">
+      <section className="space-y-4">
+        <div className="rounded-xl border-2 border-amber-400 bg-amber-50/40 p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-amber-950">
+                Required fields
+              </h3>
+              <p className="text-xs text-amber-900/80">
+                Complete these fields before creating or saving an invitation.
+              </p>
+            </div>
+            <span className="rounded-full bg-amber-200 px-2.5 py-1 text-xs font-medium text-amber-950">
+              Required
+            </span>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-amber-950">
+                Main guest name
+              </label>
+              <Input
+                className="border-amber-400 bg-white"
+                value={draft.mainGuestName}
+                onChange={(event) =>
+                  updateDraft("mainGuestName", event.target.value)
+                }
+                placeholder="Main guest name"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-amber-950">
+                Slug
+              </label>
+              <Input
+                className="border-amber-400 bg-white"
+                value={draft.slug}
+                onChange={(event) => updateDraft("slug", event.target.value)}
+                placeholder="Slug"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-amber-950">
+                Phone
+              </label>
+              <Input
+                className="border-amber-400 bg-white"
+                value={draft.phone}
+                onChange={(event) => updateDraft("phone", event.target.value)}
+                placeholder="Phone"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-amber-950">
+                Invitation language
+              </label>
+              <Select
+                value={draft.preferedLanguage || undefined}
+                onValueChange={(value: InvitationLanguage) =>
+                  updateDraft("preferedLanguage", value)
+                }
+              >
+                <SelectTrigger className="w-full border-amber-400 bg-white">
+                  <SelectValue placeholder="Preferred invitation language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">English invitation</SelectItem>
+                  <SelectItem value="ar">Arabic invitation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <label className="block text-sm font-medium text-amber-950">
+                Guest side
+              </label>
+              <Select
+                value={draft.guestSide || undefined}
+                onValueChange={(value: GuestSideOption) =>
+                  updateDraft("guestSide", value)
+                }
+              >
+                <SelectTrigger className="w-full border-amber-400 bg-white">
+                  <SelectValue placeholder="Guest side" />
+                </SelectTrigger>
+                <SelectContent>
+                  {GUEST_SIDE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
           <Select
-            value={draft.mainGuestConfirmed}
-            onValueChange={(value: GuestDraft["mainGuestConfirmed"]) =>
-              updateDraft("mainGuestConfirmed", value)
+            value={draft.mainGuestGender || undefined}
+            onValueChange={(value: GenderOption) =>
+              updateDraft("mainGuestGender", value)
             }
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="RSVP status" />
+              <SelectValue placeholder="Main guest gender" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="declined">Declined</SelectItem>
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <div className="md:col-span-2">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <label className="block text-sm font-medium">
-              Additional guests
-            </label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addAdditionalGuest}
+          <Input
+            type="number"
+            min="0"
+            inputMode="numeric"
+            value={draft.mainGuestAge}
+            onChange={(event) => updateDraft("mainGuestAge", event.target.value)}
+            placeholder="Main guest age"
+          />
+          <Input
+            value={draft.plusOneName}
+            onChange={(event) => updateDraft("plusOneName", event.target.value)}
+            placeholder="Plus-one name"
+          />
+          <Input
+            value={draft.email}
+            onChange={(event) => updateDraft("email", event.target.value)}
+            placeholder="Email"
+          />
+          <div className="md:col-span-2">
+            <Select
+              value={draft.mainGuestConfirmed}
+              onValueChange={(value: GuestDraft["mainGuestConfirmed"]) =>
+                updateDraft("mainGuestConfirmed", value)
+              }
             >
-              Add guest
-            </Button>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="RSVP status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
+                <SelectItem value="declined">Declined</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-3">
-            {draft.additionalGuests.length ? (
-              draft.additionalGuests.map((additionalGuest, index) => (
-                <div
-                  key={`${rowKeyPrefix}-additional-${index}`}
-                  className="grid gap-3 rounded-lg border border-stone-200 p-3 md:grid-cols-2"
-                >
-                  <Input
-                    value={additionalGuest.name}
-                    onChange={(event) =>
-                      updateAdditionalGuest(index, "name", event.target.value)
-                    }
-                    placeholder="Guest name"
-                  />
-                  <Select
-                    value={additionalGuest.relationshipToGuest || undefined}
-                    onValueChange={(value: AdditionalGuestRelationshipOption) =>
-                      updateAdditionalGuest(index, "relationshipToGuest", value)
-                    }
+          <div className="md:col-span-2">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="block text-sm font-medium">
+                Additional guests
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addAdditionalGuest}
+              >
+                Add guest
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {draft.additionalGuests.length ? (
+                draft.additionalGuests.map((additionalGuest, index) => (
+                  <div
+                    key={`${rowKeyPrefix}-additional-${index}`}
+                    className="grid gap-3 rounded-lg border border-stone-200 p-3 md:grid-cols-2"
                   >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Relationship to main guest" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ADDITIONAL_GUEST_RELATIONSHIP_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select
-                    value={additionalGuest.gender || undefined}
-                    onValueChange={(value: GenderOption) =>
-                      updateAdditionalGuest(index, "gender", value)
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    min="0"
-                    inputMode="numeric"
-                    value={additionalGuest.age}
-                    onChange={(event) =>
-                      updateAdditionalGuest(index, "age", event.target.value)
-                    }
-                    placeholder="Age"
-                  />
-                  <Select
-                    value={additionalGuest.confirmed}
-                    onValueChange={(value: AdditionalGuestDraft["confirmed"]) =>
-                      updateAdditionalGuest(index, "confirmed", value)
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="RSVP status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="declined">Declined</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    value={additionalGuest.confirmedAt}
-                    onChange={(event) =>
-                      updateAdditionalGuest(
-                        index,
-                        "confirmedAt",
-                        event.target.value,
-                      )
-                    }
-                    placeholder="Confirmed at (optional)"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeAdditionalGuest(index)}
-                  >
-                    Remove
-                  </Button>
+                    <Input
+                      value={additionalGuest.name}
+                      onChange={(event) =>
+                        updateAdditionalGuest(index, "name", event.target.value)
+                      }
+                      placeholder="Guest name"
+                    />
+                    <Select
+                      value={additionalGuest.relationshipToGuest || undefined}
+                      onValueChange={(value: AdditionalGuestRelationshipOption) =>
+                        updateAdditionalGuest(index, "relationshipToGuest", value)
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Relationship to main guest" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ADDITIONAL_GUEST_RELATIONSHIP_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={additionalGuest.gender || undefined}
+                      onValueChange={(value: GenderOption) =>
+                        updateAdditionalGuest(index, "gender", value)
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      value={additionalGuest.age}
+                      onChange={(event) =>
+                        updateAdditionalGuest(index, "age", event.target.value)
+                      }
+                      placeholder="Age"
+                    />
+                    <Select
+                      value={additionalGuest.confirmed}
+                      onValueChange={(value: AdditionalGuestDraft["confirmed"]) =>
+                        updateAdditionalGuest(index, "confirmed", value)
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="RSVP status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                        <SelectItem value="declined">Declined</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      value={additionalGuest.confirmedAt}
+                      onChange={(event) =>
+                        updateAdditionalGuest(
+                          index,
+                          "confirmedAt",
+                          event.target.value,
+                        )
+                      }
+                      placeholder="Confirmed at (optional)"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeAdditionalGuest(index)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">
+                  No additional guests.
                 </div>
-              ))
-            ) : (
-              <div className="rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">
-                No additional guests.
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -1012,23 +1171,6 @@ function GuestEditor({
           </SelectTrigger>
           <SelectContent>
             {COMMUNICATION_STYLE_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={draft.guestSide || undefined}
-          onValueChange={(value: GuestSideOption) =>
-            updateDraft("guestSide", value)
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Guest side" />
-          </SelectTrigger>
-          <SelectContent>
-            {GUEST_SIDE_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
