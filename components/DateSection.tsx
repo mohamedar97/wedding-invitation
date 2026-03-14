@@ -14,7 +14,7 @@ export default function DateSection() {
       <SideBox label="Saturday" />
       <div className="flex flex-col items-center text-[#834213]">
         <span className={`text-lg font-medium`}>April</span>
-        <span className={`text-6xl font-semibold`}>18</span>
+        <span className={`text-5xl font-semibold`}>18</span>
         <span className={`text-lg font-medium`}>2026</span>
       </div>
       <SideBox label="6 PM" />

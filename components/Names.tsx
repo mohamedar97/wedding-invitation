@@ -11,17 +11,17 @@ type NamesProps = {
 
 export default function Names({ mainGuest, plusOne }: NamesProps) {
   return (
-    <section className="relative z-20 flex flex-col items-center px-8 pt-2 text-center">
+    <section className="relative z-20 flex flex-col items-center px-8 pt-2 pb-4 text-center">
       <div className="flex flex-col items-center leading-none text-[#834213]">
         <h1
-          className={`${aboveTheScript.className} text-5xl tracking-[0.04em]${!plusOne ? " pb-4 pt-4" : ""}`}
+          className={`${aboveTheScript.className} text-5xl tracking-[0.04em]`}
         >
           {mainGuest}
         </h1>
         {plusOne ? (
           <>
             <span
-              className={`${aboveTheScript.className} my-2 text-3xl italic text-[#834213] sm:my-3 sm:text-4xl md:text-5xl`}
+              className={`${aboveTheScript.className} mt-4 mb-2 text-2xl italic text-[#834213] sm:mt-5 sm:mb-3 sm:text-3xl md:text-4xl`}
             >
               &
             </span>

@@ -50,7 +50,8 @@ export default function RSVP({ slug }: RSVPProps) {
   );
 
   async function handleToggle(entry: RSVPEntry, confirmed: boolean) {
-    const loadingKey = entry.kind === "main" ? "main" : `guest-${entry.guestId}`;
+    const loadingKey =
+      entry.kind === "main" ? "main" : `guest-${entry.guestId}`;
     setLoadingTarget(loadingKey);
     try {
       await updateGuest({
