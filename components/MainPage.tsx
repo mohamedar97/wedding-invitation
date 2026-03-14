@@ -40,7 +40,7 @@ export default function MainPage({
         <ChevronRightIcon className="size-4" />
       </button>
       <a
-        href="https://wa.me/14155238886?text=Hi%20I%20need%20some%20help"
+        href="https://wa.me/+201130827410?text=Hi%20I%20need%20some%20help"
         target="_blank"
         rel="noopener noreferrer"
         className="relative z-20 mt-1 flex cursor-pointer items-center gap-1.5 text-sm font-medium tracking-wide text-[#834213]/70 transition-colors hover:text-[#25D366]"
