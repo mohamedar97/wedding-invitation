@@ -92,6 +92,9 @@ export async function POST(req: Request) {
     const contentEnSid = getRequiredEnv(
       "TWILIO_WHATSAPP_INITIATION_EN_TEMPLATE_SID",
     );
+    const contentArSid = getRequiredEnv(
+      "TWILIO_WHATSAPP_INITIATION_AR_TEMPLATE_SID",
+    );
     const to = normalizeWhatsappAddress(guest.phone);
 
     const client = twilio(accountSid, authToken);
@@ -99,7 +102,7 @@ export async function POST(req: Request) {
     const twilioMessage = await client.messages.create({
       from,
       to,
-      contentSid: contentEnSid,
+      contentSid: guest.preferedLanguage === "ar" ? contentArSid : contentEnSid,
       contentVariables: JSON.stringify({ guest_name: guest.mainGuestName }),
     });
 
