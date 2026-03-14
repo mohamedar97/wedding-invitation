@@ -12,6 +12,8 @@ const gender = v.union(v.literal("male"), v.literal("female"));
 const additionalGuestRelationship = v.union(
   v.literal("husband"),
   v.literal("wife"),
+  v.literal("Fiance"),
+  v.literal("Fiancee"),
   v.literal("son"),
   v.literal("daughter"),
   v.literal("brother"),

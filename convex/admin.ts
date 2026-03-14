@@ -13,6 +13,8 @@ const gender = v.union(v.literal("male"), v.literal("female"));
 const additionalGuestRelationship = v.union(
   v.literal("husband"),
   v.literal("wife"),
+  v.literal("Fiance"),
+  v.literal("Fiancee"),
   v.literal("son"),
   v.literal("daughter"),
   v.literal("brother"),
@@ -77,6 +79,8 @@ function normalizeAdditionalGuests(
     relationshipToGuest:
       | "husband"
       | "wife"
+      | "Fiance"
+      | "Fiancee"
       | "son"
       | "daughter"
       | "brother"
@@ -106,9 +110,7 @@ function normalizeAdditionalGuests(
     .map((guest) => {
       const existingId = guest.id?.trim();
       const id =
-        existingId && !usedIds.has(existingId)
-          ? existingId
-          : String(nextId++);
+        existingId && !usedIds.has(existingId) ? existingId : String(nextId++);
 
       usedIds.add(id);
 

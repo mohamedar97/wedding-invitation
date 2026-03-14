@@ -33,6 +33,8 @@ type InvitationLanguage = "en" | "ar";
 type AdditionalGuestRelationshipOption =
   | "husband"
   | "wife"
+  | "Fiance"
+  | "Fiancee"
   | "son"
   | "daughter"
   | "brother"
@@ -123,6 +125,8 @@ const ADDITIONAL_GUEST_RELATIONSHIP_OPTIONS: Array<{
 }> = [
   { value: "husband", label: "Husband" },
   { value: "wife", label: "Wife" },
+  { value: "Fiance", label: "Fiance" },
+  { value: "Fiancee", label: "Fiancee" },
   { value: "son", label: "Son" },
   { value: "daughter", label: "Daughter" },
   { value: "brother", label: "Brother" },
@@ -422,6 +426,15 @@ function InitiateConversationButton({
 
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
+      <Button
+        type="button"
+        variant={variant}
+        size={size}
+        onClick={handleInitiate}
+        disabled={isPending}
+      >
+        {isPending ? "Sending..." : "Initiate conversation"}
+      </Button>
       {feedback ? (
         <span className="text-xs text-emerald-700">{feedback}</span>
       ) : null}
@@ -489,7 +502,8 @@ export default function AdminGuestDashboard() {
 
     return guests.filter((guest) => {
       const matchesGuestSide =
-        guestSideFilter === "all" || getGuestSideValue(guest) === guestSideFilter;
+        guestSideFilter === "all" ||
+        getGuestSideValue(guest) === guestSideFilter;
 
       if (!matchesGuestSide) {
         return false;
