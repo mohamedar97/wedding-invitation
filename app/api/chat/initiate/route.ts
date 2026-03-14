@@ -89,8 +89,8 @@ export async function POST(req: Request) {
     const from = normalizeWhatsappAddress(
       getRequiredEnv("TWILIO_WHATSAPP_FROM"),
     );
-    const contentSid = getRequiredEnv(
-      "TWILIO_WHATSAPP_INITIATION_TEMPLATE_SID",
+    const contentEnSid = getRequiredEnv(
+      "TWILIO_WHATSAPP_INITIATION_EN_TEMPLATE_SID",
     );
     const to = normalizeWhatsappAddress(guest.phone);
 
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
     const twilioMessage = await client.messages.create({
       from,
       to,
-      contentSid,
+      contentSid: contentEnSid,
       contentVariables: JSON.stringify({ guest_name: guest.mainGuestName }),
     });
 

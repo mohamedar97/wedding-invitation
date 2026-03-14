@@ -1,4 +1,4 @@
-import { generateText, tool } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { api } from "@/convex/_generated/api";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
@@ -166,16 +166,21 @@ async function sendWhatsappMessage(to: string, body: string) {
   const authToken = getRequiredEnv("TWILIO_AUTH_TOKEN");
   const from = normalizeWhatsappAddress(getRequiredEnv("TWILIO_WHATSAPP_FROM"));
   const normalizedTo = normalizeWhatsappAddress(to);
+  const trimmedBody = body.trim();
   const client = twilio(accountSid, authToken);
+
+  if (!trimmedBody) {
+    throw new Error("Refusing to send an empty WhatsApp reply.");
+  }
 
   console.info("[chat process] calling twilio messages.create", {
     from,
     to: normalizedTo,
-    bodyLength: body.length,
+    bodyLength: trimmedBody.length,
   });
 
   return await client.messages.create({
-    body,
+    body: trimmedBody,
     from,
     to: normalizedTo,
   });
@@ -221,6 +226,7 @@ export async function POST(req: Request) {
     const result = await generateText({
       system: buildSystemPrompt(replyContext.guest),
       model: openai("gpt-5.4"),
+      stopWhen: stepCountIs(5),
       tools: {
         update_guest_confirmation_status:
           buildUpdateGuestConfirmationStatusTool(replyContext.guest),
@@ -232,18 +238,23 @@ export async function POST(req: Request) {
         }),
       ) as ChatMessage[],
     });
+    const replyText = result.text.trim();
+
+    if (!replyText) {
+      throw new Error("Chat model returned an empty WhatsApp reply.");
+    }
 
     console.info("[chat process] sending whatsapp reply", {
       conversationId: body.conversationId,
       batchId: body.batchId,
       guestId: replyContext.guest._id,
       to: normalizeWhatsappAddress(replyContext.guest.phone),
-      replyLength: result.text.length,
+      replyLength: replyText.length,
     });
 
     const twilioMessage = await sendWhatsappMessage(
       replyContext.guest.phone,
-      result.text,
+      replyText,
     );
 
     console.info("[chat process] sent whatsapp reply", {
@@ -254,7 +265,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({
-      text: result.text,
+      text: replyText,
       twilioMessageSid: twilioMessage.sid,
     });
   } catch (error) {
