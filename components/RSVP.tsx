@@ -2,6 +2,7 @@
 
 import { api } from "@/convex/_generated/api";
 import {
+  DialogClose,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -13,9 +14,17 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { CheckIcon, XIcon, Loader2Icon } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  getTranslation,
+  invitationTranslations,
+  type InvitationLanguage,
+} from "@/lib/translations";
 
 type RSVPProps = {
   slug: string;
+  language: InvitationLanguage;
+  direction: "ltr" | "rtl";
 };
 
 type RSVPEntry = {
@@ -26,7 +35,7 @@ type RSVPEntry = {
   confirmedAt?: string;
 };
 
-export default function RSVP({ slug }: RSVPProps) {
+export default function RSVP({ slug, language, direction }: RSVPProps) {
   const guestRecord = useQuery(api.getGuests.get, { slug });
   const [loadingTarget, setLoadingTarget] = useState<string | null>(null);
   const updateGuest = useMutation(api.rsvp.updateGuestConfirmation);
@@ -39,7 +48,7 @@ export default function RSVP({ slug }: RSVPProps) {
           confirmed: guestRecord.mainGuestConfirmed,
           confirmedAt: guestRecord.mainGuestConfirmedAt,
         },
-        ...(guestRecord.additionalGuests ?? []).map((guest, index) => ({
+        ...(guestRecord.additionalGuests ?? []).map((guest) => ({
           ...guest,
           kind: "guest" as const,
           guestId: guest.id,
@@ -71,18 +80,22 @@ export default function RSVP({ slug }: RSVPProps) {
         <button
           className={` relative z-20 mt-2 cursor-pointer border border-[#834213] bg-transparent px-8 py-2 text-lg font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:bg-[#834213]/10`}
         >
-          RSVP
+          {getTranslation(invitationTranslations.rsvp.cta, language)}
         </button>
       </DialogTrigger>
-      <DialogContent className="border-[#834213]/30 sm:max-w-md">
+      <DialogContent
+        className="border-[#834213]/30 sm:max-w-md"
+        dir={direction}
+        showCloseButton={false}
+      >
         <DialogHeader>
           <DialogTitle
             className={` text-center text-2xl font-semibold text-[#834213]`}
           >
-            RSVP
+            {getTranslation(invitationTranslations.rsvp.title, language)}
           </DialogTitle>
           <DialogDescription className="text-center">
-            Please confirm attendance for each guest.
+            {getTranslation(invitationTranslations.rsvp.description, language)}
           </DialogDescription>
         </DialogHeader>
 
@@ -116,7 +129,10 @@ export default function RSVP({ slug }: RSVPProps) {
                             ? "border-emerald-500 bg-emerald-500 text-white"
                             : "border-emerald-500/40 text-emerald-500/40 hover:border-emerald-500 hover:text-emerald-500"
                         }`}
-                        aria-label={`Confirm ${guest.name}`}
+                        aria-label={`${getTranslation(
+                          invitationTranslations.rsvp.confirmGuest,
+                          language,
+                        )} ${guest.name}`}
                       >
                         <CheckIcon className="size-5" />
                       </button>
@@ -127,7 +143,10 @@ export default function RSVP({ slug }: RSVPProps) {
                             ? "border-red-500 bg-red-500 text-white"
                             : "border-red-500/40 text-red-500/40 hover:border-red-500 hover:text-red-500"
                         }`}
-                        aria-label={`Decline ${guest.name}`}
+                        aria-label={`${getTranslation(
+                          invitationTranslations.rsvp.declineGuest,
+                          language,
+                        )} ${guest.name}`}
                       >
                         <XIcon className="size-5" />
                       </button>
@@ -141,11 +160,17 @@ export default function RSVP({ slug }: RSVPProps) {
 
         {guestRecord && allResponded && (
           <p className={` text-center text-sm text-[#834213]/70`}>
-            Thank you for responding!
+            {getTranslation(invitationTranslations.rsvp.thankYou, language)}
           </p>
         )}
 
-        <DialogFooter showCloseButton />
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">
+              {getTranslation(invitationTranslations.actions.close, language)}
+            </Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

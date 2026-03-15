@@ -132,6 +132,36 @@ function normalizeAdditionalGuests(
   return normalized.length ? normalized : undefined;
 }
 
+function validatePlusOneNameForAdditionalGuests(args: {
+  plusOneName?: string;
+  additionalGuests?: {
+    id?: string;
+    name: string;
+    relationshipToGuest:
+      | "husband"
+      | "wife"
+      | "Fiance"
+      | "Fiancee"
+      | "son"
+      | "daughter"
+      | "brother"
+      | "sister"
+      | "father"
+      | "mother"
+      | "friend"
+      | "colleague"
+      | "other";
+    gender: "male" | "female";
+    age?: number;
+    confirmed?: boolean;
+    confirmedAt?: string;
+  }[];
+}) {
+  if ((args.additionalGuests?.length ?? 0) > 0 && !args.plusOneName?.trim()) {
+    throw new Error("Plus-one name is required when additional guests are added.");
+  }
+}
+
 function normalizeNotes(notes?: {
   languageMode?: "english" | "arabic" | "franco";
   communicationStyle?: "formal" | "warm" | "casual" | "playful";
@@ -204,6 +234,8 @@ export const createGuest = mutation({
     const slug = args.slug.trim();
     const phone = args.phone.trim();
 
+    validatePlusOneNameForAdditionalGuests(args);
+
     if (!mainGuestName) {
       throw new Error("Main guest name is required.");
     }
@@ -262,6 +294,8 @@ export const updateGuest = mutation({
     const mainGuestName = args.mainGuestName.trim();
     const slug = args.slug.trim();
     const phone = args.phone.trim();
+
+    validatePlusOneNameForAdditionalGuests(args);
 
     if (!mainGuestName) {
       throw new Error("Main guest name is required.");

@@ -2,9 +2,15 @@ import {
   CameraIcon,
   BabyIcon,
   LockKeyholeIcon,
+  ChevronRightIcon,
   ChevronLeftIcon,
 } from "lucide-react";
 import Decorations from "./Decoration";
+import {
+  getTranslation,
+  invitationTranslations,
+  type InvitationLanguage,
+} from "@/lib/translations";
 
 function SectionCard({
   icon: Icon,
@@ -32,44 +38,73 @@ function SectionCard({
 
 type DetailsPageProps = {
   direction: "ltr" | "rtl";
+  language: InvitationLanguage;
   onBack: () => void;
 };
 
-export default function DetailsPage({ direction, onBack }: DetailsPageProps) {
+export default function DetailsPage({
+  direction,
+  language,
+  onBack,
+}: DetailsPageProps) {
+  const BackChevron = language === "AR" ? ChevronRightIcon : ChevronLeftIcon;
+
   return (
     <Decorations direction={direction}>
       <div className="relative z-20 flex flex-col items-center gap-3 px-12">
         <h2
           className={`text-3xl font-semibold tracking-widest text-[#834213] sm:text-4xl`}
         >
-          Details
+          {getTranslation(invitationTranslations.details.title, language)}
         </h2>
 
         <div className="h-px w-16 bg-[#da9e20]/30" />
 
-        <SectionCard icon={CameraIcon} title="Photo Gallery">
+        <SectionCard
+          icon={CameraIcon}
+          title={getTranslation(
+            invitationTranslations.details.photoGalleryTitle,
+            language,
+          )}
+        >
           <a
             href="https://drive.google.com/drive/folders/1aoR_R2I-IJar0GbiRHpDYpJ2F0sCDCED?usp=sharing"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-[#834213] underline underline-offset-2 transition-colors hover:text-[#da9e20]"
           >
-            Upload & view photos on Google Drive
+            {getTranslation(
+              invitationTranslations.details.photoGalleryBody,
+              language,
+            )}
           </a>
         </SectionCard>
 
         <div className="h-px w-16 bg-[#da9e20]/30" />
 
-        <SectionCard icon={BabyIcon} title="Adults-Only Celebration">
-          We love your little ones, but our wedding will be adults-only. We
-          appreciate your understanding.{" "}
+        <SectionCard
+          icon={BabyIcon}
+          title={getTranslation(
+            invitationTranslations.details.adultsOnlyTitle,
+            language,
+          )}
+        >
+          {getTranslation(invitationTranslations.details.adultsOnlyBody, language)}
         </SectionCard>
 
         <div className="h-px w-16 bg-[#da9e20]/30" />
 
-        <SectionCard icon={LockKeyholeIcon} title="Invitation Note">
-          This invitation is reserved especially for you. Please do not share
-          it.
+        <SectionCard
+          icon={LockKeyholeIcon}
+          title={getTranslation(
+            invitationTranslations.details.invitationNoteTitle,
+            language,
+          )}
+        >
+          {getTranslation(
+            invitationTranslations.details.invitationNoteBody,
+            language,
+          )}
         </SectionCard>
 
         <div className="h-px w-16 bg-[#da9e20]/30" />
@@ -79,8 +114,8 @@ export default function DetailsPage({ direction, onBack }: DetailsPageProps) {
         onClick={onBack}
         className={`relative z-20 mt-4 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]`}
       >
-        <ChevronLeftIcon className="size-4" />
-        Back
+        <BackChevron className="size-4" />
+        {getTranslation(invitationTranslations.actions.back, language)}
       </button>
     </Decorations>
   );

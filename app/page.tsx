@@ -6,7 +6,7 @@ export default function Home() {
       personalizedMode={false}
       mainGuest="Mohamed"
       plusOne="Habiba"
-      direction="ltr"
+      language="EN"
     />
   );
 }

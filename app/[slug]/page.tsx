@@ -1,6 +1,7 @@
 import Invitation from "@/components/Invitation";
 import { api } from "@/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
+import { type InvitationLanguage } from "@/lib/translations";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-static";
@@ -25,12 +26,15 @@ export default async function GuestPage({ params }: GuestPageProps) {
     notFound();
   }
 
+  const language: InvitationLanguage =
+    guest.preferedLanguage === "ar" ? "AR" : "EN";
+
   return (
     <Invitation
       slug={slug}
       mainGuest={guest.mainGuestName}
       plusOne={guest.plusOneName}
-      direction={guest.preferedLanguage === "ar" ? "rtl" : "ltr"}
+      language={language}
     />
   );
 }

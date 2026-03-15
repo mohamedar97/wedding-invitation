@@ -3,12 +3,13 @@
 import { useState } from "react";
 import DetailsPage from "@/components/DetailsPage";
 import MainPage from "./MainPage";
+import { type InvitationLanguage } from "@/lib/translations";
 
 type InvitationProps = {
   slug?: string;
   mainGuest: string;
   plusOne?: string;
-  direction: "ltr" | "rtl";
+  language: InvitationLanguage;
   personalizedMode?: boolean;
 };
 
@@ -16,15 +17,20 @@ export default function Invitation({
   slug,
   mainGuest,
   plusOne,
-  direction,
+  language,
   personalizedMode = true,
 }: InvitationProps) {
   const [page, setPage] = useState<"main" | "details">("main");
+  const direction = language === "AR" ? "rtl" : "ltr";
 
   if (page === "details") {
     return (
       <div className="animate-in fade-in duration-500">
-        <DetailsPage direction={direction} onBack={() => setPage("main")} />
+        <DetailsPage
+          direction={direction}
+          language={language}
+          onBack={() => setPage("main")}
+        />
       </div>
     );
   }
@@ -36,6 +42,7 @@ export default function Invitation({
         mainGuest={mainGuest}
         plusOne={plusOne}
         direction={direction}
+        language={language}
         personalizedMode={personalizedMode}
         onShowDetails={() => setPage("details")}
       />

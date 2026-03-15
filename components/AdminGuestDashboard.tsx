@@ -308,6 +308,13 @@ function getMinimumValidationError(
     return "Guest side is required.";
   }
 
+  if (
+    draft.additionalGuests.length > 0 &&
+    !draft.plusOneName.trim()
+  ) {
+    return "Plus-one name is required when additional guests are added.";
+  }
+
   return null;
 }
 
@@ -906,7 +913,8 @@ function GuestEditor({
     <>
       <p className="mb-4 text-sm text-muted-foreground">
         Required to create an invitation: main guest name, slug, phone number,
-        invitation language, and guest side. Everything else is optional.
+        invitation language, and guest side. Plus-one name is also required
+        when additional guests are added.
       </p>
 
       <section className="space-y-4">
@@ -1032,7 +1040,11 @@ function GuestEditor({
           <Input
             value={draft.plusOneName}
             onChange={(event) => updateDraft("plusOneName", event.target.value)}
-            placeholder="Plus-one name"
+            placeholder={
+              draft.additionalGuests.length > 0
+                ? "Plus-one name (required with additional guests)"
+                : "Plus-one name"
+            }
           />
           <Input
             value={draft.email}
