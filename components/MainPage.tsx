@@ -35,6 +35,10 @@ export default function MainPage({
     getTranslation(invitationTranslations.actions.helpMessage, language),
   );
   const DetailsChevron = language === "AR" ? ChevronLeftIcon : ChevronRightIcon;
+  const detailsButtonClassName =
+    language === "AR"
+      ? "relative z-20 mt-2 flex cursor-pointer items-center gap-1 text-base font-semibold text-[#834213] transition-colors hover:text-[#da9e20]"
+      : "relative z-20 mt-2 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]";
 
   return (
     <Decorations direction={direction}>
@@ -44,10 +48,7 @@ export default function MainPage({
       <DateSection language={language} />
       <LocationLink language={language} />
       {slug && <RSVP slug={slug} language={language} direction={direction} />}
-      <button
-        onClick={onShowDetails}
-        className={`relative z-20 mt-2 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]`}
-      >
+      <button onClick={onShowDetails} className={detailsButtonClassName}>
         {getTranslation(invitationTranslations.actions.moreDetails, language)}
         <DetailsChevron className="size-4" />
       </button>

@@ -57,6 +57,10 @@ export default function RSVP({ slug, language, direction }: RSVPProps) {
   const allResponded = rsvpEntries.every(
     (guest) => guest.confirmed !== undefined,
   );
+  const triggerClassName =
+    language === "AR"
+      ? "relative z-20 mt-2 cursor-pointer border border-[#834213] bg-transparent px-8 py-2 text-lg font-semibold text-[#834213] transition-colors hover:bg-[#834213]/10"
+      : "relative z-20 mt-2 cursor-pointer border border-[#834213] bg-transparent px-8 py-2 text-lg font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:bg-[#834213]/10";
 
   async function handleToggle(entry: RSVPEntry, confirmed: boolean) {
     const loadingKey =
@@ -77,9 +81,7 @@ export default function RSVP({ slug, language, direction }: RSVPProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button
-          className={` relative z-20 mt-2 cursor-pointer border border-[#834213] bg-transparent px-8 py-2 text-lg font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:bg-[#834213]/10`}
-        >
+        <button className={triggerClassName}>
           {getTranslation(invitationTranslations.rsvp.cta, language)}
         </button>
       </DialogTrigger>

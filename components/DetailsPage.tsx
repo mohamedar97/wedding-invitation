@@ -48,13 +48,19 @@ export default function DetailsPage({
   onBack,
 }: DetailsPageProps) {
   const BackChevron = language === "AR" ? ChevronRightIcon : ChevronLeftIcon;
+  const titleClassName =
+    language === "AR"
+      ? "text-3xl font-semibold text-[#834213] sm:text-4xl"
+      : "text-3xl font-semibold tracking-widest text-[#834213] sm:text-4xl";
+  const backButtonClassName =
+    language === "AR"
+      ? "relative z-20 mt-4 flex cursor-pointer items-center gap-1 text-base font-semibold text-[#834213] transition-colors hover:text-[#da9e20]"
+      : "relative z-20 mt-4 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]";
 
   return (
     <Decorations direction={direction}>
       <div className="relative z-20 flex flex-col items-center gap-3 px-12">
-        <h2
-          className={`text-3xl font-semibold tracking-widest text-[#834213] sm:text-4xl`}
-        >
+        <h2 className={titleClassName}>
           {getTranslation(invitationTranslations.details.title, language)}
         </h2>
 
@@ -110,10 +116,7 @@ export default function DetailsPage({
         <div className="h-px w-16 bg-[#da9e20]/30" />
       </div>
 
-      <button
-        onClick={onBack}
-        className={`relative z-20 mt-4 flex cursor-pointer items-center gap-1 text-base font-semibold tracking-widest text-[#834213] uppercase transition-colors hover:text-[#da9e20]`}
-      >
+      <button onClick={onBack} className={backButtonClassName}>
         <BackChevron className="size-4" />
         {getTranslation(invitationTranslations.actions.back, language)}
       </button>

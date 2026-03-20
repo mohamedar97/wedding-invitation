@@ -18,13 +18,15 @@ type NamesProps = {
 export default function Names({ mainGuest, plusOne, language }: NamesProps) {
   const scriptFontClassName =
     language === "AR" ? ukijDiy.className : aboveTheScript.className;
+  const nameClassName =
+    language === "AR"
+      ? `${scriptFontClassName} text-5xl`
+      : `${scriptFontClassName} text-5xl tracking-[0.04em]`;
 
   return (
     <section className="relative z-20 flex flex-col items-center px-8 pt-2 pb-4 text-center">
       <div className="flex flex-col items-center leading-none text-[#834213]">
-        <h1 className={`${scriptFontClassName} text-5xl tracking-[0.04em]`}>
-          {mainGuest}
-        </h1>
+        <h1 className={nameClassName}>{mainGuest}</h1>
         {plusOne ? (
           <>
             <span
@@ -32,11 +34,7 @@ export default function Names({ mainGuest, plusOne, language }: NamesProps) {
             >
               &
             </span>
-            <h1
-              className={`${scriptFontClassName} text-5xl tracking-[0.04em] text-[#834213]`}
-            >
-              {plusOne}
-            </h1>
+            <h1 className={`${nameClassName} text-[#834213]`}>{plusOne}</h1>
           </>
         ) : null}
       </div>
