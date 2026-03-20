@@ -59,7 +59,7 @@ export const invitationTranslations = {
   location: {
     venue: {
       EN: "Aurora Lounge Venue",
-      AR: "أورورا لاونج",
+      AR: "قاعة الأورورا لاونج",
     },
   },
   actions: {
