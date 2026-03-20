@@ -16,22 +16,27 @@ function SectionCard({
   icon: Icon,
   title,
   children,
+  language,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   children: React.ReactNode;
+  language: InvitationLanguage;
 }) {
+  const titleClassName =
+    language === "AR"
+      ? "text-lg font-semibold text-[#834213]"
+      : "text-lg font-semibold tracking-widest text-[#834213] uppercase";
+  const bodyClassName =
+    language === "AR"
+      ? "max-w-xs text-xs leading-relaxed font-medium text-[#834213]/80"
+      : "max-w-xs text-xs leading-relaxed font-medium tracking-wide text-[#834213]/80";
+
   return (
     <div className="flex flex-col items-center gap-2 text-center">
       <Icon className="size-5 text-[#da9e20]" />
-      <h3
-        className={`text-lg font-semibold tracking-widest text-[#834213] uppercase`}
-      >
-        {title}
-      </h3>
-      <p className="max-w-xs text-xs leading-relaxed font-medium tracking-wide text-[#834213]/80">
-        {children}
-      </p>
+      <h3 className={titleClassName}>{title}</h3>
+      <p className={bodyClassName}>{children}</p>
     </div>
   );
 }
@@ -72,6 +77,7 @@ export default function DetailsPage({
             invitationTranslations.details.photoGalleryTitle,
             language,
           )}
+          language={language}
         >
           <a
             href="https://drive.google.com/drive/folders/1aoR_R2I-IJar0GbiRHpDYpJ2F0sCDCED?usp=sharing"
@@ -94,6 +100,7 @@ export default function DetailsPage({
             invitationTranslations.details.adultsOnlyTitle,
             language,
           )}
+          language={language}
         >
           {getTranslation(invitationTranslations.details.adultsOnlyBody, language)}
         </SectionCard>
@@ -106,6 +113,7 @@ export default function DetailsPage({
             invitationTranslations.details.invitationNoteTitle,
             language,
           )}
+          language={language}
         >
           {getTranslation(
             invitationTranslations.details.invitationNoteBody,
