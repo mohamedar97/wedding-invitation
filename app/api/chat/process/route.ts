@@ -7,6 +7,7 @@ import twilio from "twilio";
 import { z } from "zod";
 import { buildZaynPrompt } from "../promptBuilder";
 import { Id } from "@/convex/_generated/dataModel";
+import { normalizeWhatsappAddress } from "@/lib/phone";
 
 type LanguageMode = "english" | "arabic" | "franco";
 
@@ -70,20 +71,6 @@ function getRequiredEnv(name: string) {
   }
 
   return value;
-}
-
-function normalizeWhatsappAddress(value: string) {
-  const trimmed = value.trim();
-
-  if (!trimmed) {
-    throw new Error("WhatsApp address is required.");
-  }
-
-  if (trimmed.startsWith("whatsapp:")) {
-    return trimmed;
-  }
-
-  return `whatsapp:${trimmed}`;
 }
 
 function isAuthorized(req: Request) {

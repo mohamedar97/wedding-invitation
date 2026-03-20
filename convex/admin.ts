@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { normalizeInternationalPhone } from "../lib/phone";
 
 import { mutation, query } from "./_generated/server";
 
@@ -232,7 +233,7 @@ export const createGuest = mutation({
   handler: async (ctx, args) => {
     const mainGuestName = args.mainGuestName.trim();
     const slug = args.slug.trim();
-    const phone = args.phone.trim();
+    const phone = normalizeInternationalPhone(args.phone);
 
     validatePlusOneNameForAdditionalGuests(args);
 
@@ -293,7 +294,7 @@ export const updateGuest = mutation({
   handler: async (ctx, args) => {
     const mainGuestName = args.mainGuestName.trim();
     const slug = args.slug.trim();
-    const phone = args.phone.trim();
+    const phone = normalizeInternationalPhone(args.phone);
 
     validatePlusOneNameForAdditionalGuests(args);
 

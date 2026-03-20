@@ -2,6 +2,7 @@ import { api } from "@/convex/_generated/api";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { NextResponse } from "next/server";
 import twilio from "twilio";
+import { normalizeWhatsappAddress } from "@/lib/phone";
 
 const INITIATION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -13,20 +14,6 @@ function getRequiredEnv(name: string) {
   }
 
   return value;
-}
-
-function normalizeWhatsappAddress(value: string) {
-  const trimmed = value.trim();
-
-  if (!trimmed) {
-    throw new Error("WhatsApp address is required.");
-  }
-
-  if (trimmed.startsWith("whatsapp:")) {
-    return trimmed;
-  }
-
-  return `whatsapp:${trimmed}`;
 }
 
 function getLatestUserMessageAt(
