@@ -2,7 +2,7 @@ import ConvexClientProvider from "@/components/ConvexClientProvider";
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
+import { Analytics } from "@vercel/analytics/react";
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
@@ -35,6 +35,7 @@ export default function RootLayout({
         }}
       >
         <ConvexClientProvider>{children}</ConvexClientProvider>
+        <Analytics />
       </body>
     </html>
   );
