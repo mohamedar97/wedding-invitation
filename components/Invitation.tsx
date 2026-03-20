@@ -22,10 +22,11 @@ export default function Invitation({
 }: InvitationProps) {
   const [page, setPage] = useState<"main" | "details">("main");
   const direction = language === "AR" ? "rtl" : "ltr";
+  const languageClassName = language === "AR" ? "invitation-arabic" : undefined;
 
   if (page === "details") {
     return (
-      <div className="animate-in fade-in duration-500">
+      <div className={`animate-in fade-in duration-500 ${languageClassName ?? ""}`}>
         <DetailsPage
           direction={direction}
           language={language}
@@ -36,7 +37,7 @@ export default function Invitation({
   }
 
   return (
-    <div className="animate-in fade-in duration-500">
+    <div className={`animate-in fade-in duration-500 ${languageClassName ?? ""}`}>
       <MainPage
         slug={slug}
         mainGuest={mainGuest}

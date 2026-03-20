@@ -1,12 +1,19 @@
 import ConvexClientProvider from "@/components/ConvexClientProvider";
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Geist_Mono } from "next/font/google";
+import { Cormorant_Garamond, DM_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
+
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-cormorant",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-dm-sans",
 });
 
 const geistMono = Geist_Mono({
@@ -27,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${cormorant.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${cormorant.variable} ${dmSans.variable} ${geistMono.variable} font-sans antialiased`}
         style={{
           backgroundImage: "url('/background.webp')",
           backgroundRepeat: "repeat",

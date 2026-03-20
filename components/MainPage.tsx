@@ -39,7 +39,7 @@ export default function MainPage({
   return (
     <Decorations direction={direction}>
       <TopText personalizedMode={personalizedMode} language={language} />
-      <Names mainGuest={mainGuest} plusOne={plusOne} />
+      <Names mainGuest={mainGuest} plusOne={plusOne} language={language} />
       <BottomText personalizedMode={personalizedMode} language={language} />
       <DateSection language={language} />
       <LocationLink language={language} />
