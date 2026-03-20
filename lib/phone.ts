@@ -1,5 +1,5 @@
 export function normalizeInternationalPhone(value: string) {
-  const trimmed = value.trim();
+  const trimmed = value.trim().replace(/\s+/g, "");
 
   if (!trimmed) {
     return trimmed;

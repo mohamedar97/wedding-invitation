@@ -89,7 +89,10 @@ export async function POST(req: Request) {
     const twilioMessage = await client.messages.create({
       from,
       to,
-      contentSid: guest.preferedLanguage === "ar" ? contentArSid : contentEnSid,
+      contentSid:
+        guest.notesForAI?.languageMode === "arabic"
+          ? contentArSid
+          : contentEnSid,
       contentVariables: JSON.stringify({ guest_name: guest.mainGuestName }),
     });
 
