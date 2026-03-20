@@ -90,7 +90,8 @@ export async function POST(req: Request) {
       from,
       to,
       contentSid:
-        guest.notesForAI?.languageMode === "arabic"
+        guest.notesForAI?.languageMode === "arabic" ||
+        guest.preferedLanguage === "ar"
           ? contentArSid
           : contentEnSid,
       contentVariables: JSON.stringify({ guest_name: guest.mainGuestName }),
