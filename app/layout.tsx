@@ -23,7 +23,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Mohamed and Habiba's Wedding Invitation",
-  description: "Countdown to our wedding day on April 18, 2026.",
+  description: "Mohamed and Habiba's Wedding Invitation on April 18, 2026.",
 };
 
 export default function RootLayout({
