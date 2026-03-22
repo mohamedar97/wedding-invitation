@@ -494,7 +494,8 @@ function buildWhatsappInvitationHref(
 ) {
   const normalizedPhone = phone.replace(/^whatsapp:/, "").replace(/\D/g, "");
   const invitationUrl = `${origin}/${slug}`;
-  const text = encodeURIComponent(`Here is your invitation ${invitationUrl}`);
+  const text = encodeURIComponent(`We can't wait to celebrate with you!
+For more details please check your personal invitation: ${invitationUrl}`);
 
   return `https://wa.me/${normalizedPhone}?text=${text}`;
 }
