@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, MessageCircleIcon } from "lucide-react";
 
 import { revalidateInvitationPaths } from "@/app/admin/actions";
 import { api } from "@/convex/_generated/api";
@@ -308,10 +308,7 @@ function getMinimumValidationError(
     return "Guest side is required.";
   }
 
-  if (
-    draft.additionalGuests.length > 0 &&
-    !draft.plusOneName.trim()
-  ) {
+  if (draft.additionalGuests.length > 0 && !draft.plusOneName.trim()) {
     return "Plus-one name is required when additional guests are added.";
   }
 
@@ -490,6 +487,51 @@ function CopyInvitationLinkButton({
   );
 }
 
+function buildWhatsappInvitationHref(
+  phone: string,
+  slug: string,
+  origin: string,
+) {
+  const normalizedPhone = phone.replace(/^whatsapp:/, "").replace(/\D/g, "");
+  const invitationUrl = `${origin}/${slug}`;
+  const text = encodeURIComponent(`Here is your invitation ${invitationUrl}`);
+
+  return `https://wa.me/${normalizedPhone}?text=${text}`;
+}
+
+function SendInvitationButton({
+  phone,
+  slug,
+  className,
+}: {
+  phone: string;
+  slug: string;
+  className?: string;
+}) {
+  function handleClick() {
+    const href = buildWhatsappInvitationHref(
+      phone,
+      slug,
+      window.location.origin,
+    );
+
+    window.open(href, "_blank", "noopener,noreferrer");
+  }
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={handleClick}
+      className={className}
+    >
+      <MessageCircleIcon />
+      Send invitation
+    </Button>
+  );
+}
+
 export default function AdminGuestDashboard() {
   const guests = useQuery(api.admin.listGuests, {});
   const [isCreatingGuest, setIsCreatingGuest] = useState(false);
@@ -652,6 +694,10 @@ export default function AdminGuestDashboard() {
                       variant={
                         guest._id === activeGuestId ? "default" : "outline"
                       }
+                    />
+                    <SendInvitationButton
+                      phone={guest.phone}
+                      slug={guest.slug}
                     />
                     <CopyInvitationLinkButton slug={guest.slug} />
                   </div>
@@ -913,8 +959,8 @@ function GuestEditor({
     <>
       <p className="mb-4 text-sm text-muted-foreground">
         Required to create an invitation: main guest name, slug, phone number,
-        invitation language, and guest side. Plus-one name is also required
-        when additional guests are added.
+        invitation language, and guest side. Plus-one name is also required when
+        additional guests are added.
       </p>
 
       <section className="space-y-4">
