@@ -75,8 +75,9 @@ type GuestRecordWithLocalFields = GuestRecord & {
       : {
           id: string;
           name: string;
-          relationshipToGuest: AdditionalGuestRelationshipOption;
-          gender: GenderOption;
+          tableNumber?: number;
+          relationshipToGuest?: AdditionalGuestRelationshipOption;
+          gender?: GenderOption;
           age?: number;
           confirmed?: boolean;
           confirmedAt?: string;
@@ -88,6 +89,7 @@ type GuestRecordWithLocalFields = GuestRecord & {
 type AdditionalGuestDraft = {
   id: string;
   name: string;
+  tableNumber: string;
   relationshipToGuest: "" | AdditionalGuestRelationshipOption;
   gender: "" | GenderOption;
   age: string;
@@ -199,10 +201,11 @@ function NotesTextarea({
   );
 }
 
-function createAdditionalGuestDraft(): AdditionalGuestDraft {
+function createAdditionalGuestDraft(tableNumber = ""): AdditionalGuestDraft {
   return {
     id: crypto.randomUUID(),
     name: "",
+    tableNumber,
     relationshipToGuest: "",
     gender: "",
     age: "",
@@ -262,8 +265,12 @@ function createDraft(rawGuest: GuestRecord): GuestDraft {
       guest.additionalGuests?.map((additionalGuest) => ({
         id: additionalGuest.id,
         name: additionalGuest.name,
-        relationshipToGuest: additionalGuest.relationshipToGuest,
-        gender: additionalGuest.gender,
+        tableNumber:
+          additionalGuest.tableNumber !== undefined
+            ? String(additionalGuest.tableNumber)
+            : "",
+        relationshipToGuest: additionalGuest.relationshipToGuest ?? "",
+        gender: additionalGuest.gender ?? "",
         age:
           additionalGuest.age !== undefined ? String(additionalGuest.age) : "",
         confirmed:
@@ -830,6 +837,12 @@ function GuestEditor({
         }
       }
 
+      if (key === "tableNumber" && typeof value === "string" && value) {
+        nextDraft.additionalGuests = nextDraft.additionalGuests.map((guest) =>
+          guest.tableNumber ? guest : { ...guest, tableNumber: value },
+        );
+      }
+
       return nextDraft;
     });
     setFeedback(null);
@@ -857,8 +870,9 @@ function GuestEditor({
     const additionalGuests: Array<{
       id: string;
       name: string;
-      relationshipToGuest: AdditionalGuestRelationshipOption;
-      gender: GenderOption;
+      tableNumber?: number;
+      relationshipToGuest?: AdditionalGuestRelationshipOption;
+      gender?: GenderOption;
       age?: number;
       confirmed?: boolean;
       confirmedAt?: string;
@@ -869,20 +883,18 @@ function GuestEditor({
       const name = additionalGuest.name?.trim() ?? "";
       const confirmedAt = additionalGuest.confirmedAt?.trim() || undefined;
 
-      if (
-        !id ||
-        !name ||
-        !additionalGuest.relationshipToGuest ||
-        !additionalGuest.gender
-      ) {
+      if (!id || !name) {
         continue;
       }
 
       additionalGuests.push({
         id,
         name,
-        relationshipToGuest: additionalGuest.relationshipToGuest,
-        gender: additionalGuest.gender,
+        tableNumber: additionalGuest.tableNumber
+          ? Number(additionalGuest.tableNumber)
+          : undefined,
+        relationshipToGuest: additionalGuest.relationshipToGuest || undefined,
+        gender: additionalGuest.gender || undefined,
         age: additionalGuest.age ? Number(additionalGuest.age) : undefined,
         confirmed:
           additionalGuest.confirmed === "pending"
@@ -898,7 +910,9 @@ function GuestEditor({
           mode === "edit" ? initialDraft.slug.trim() || undefined : undefined;
         const payload = {
           mainGuestName: draft.mainGuestName,
-          tableNumber: draft.tableNumber ? Number(draft.tableNumber) : undefined,
+          tableNumber: draft.tableNumber
+            ? Number(draft.tableNumber)
+            : undefined,
           mainGuestGender: draft.mainGuestGender || undefined,
           mainGuestAge: draft.mainGuestAge
             ? Number(draft.mainGuestAge)
@@ -982,7 +996,7 @@ function GuestEditor({
       ...current,
       additionalGuests: [
         ...current.additionalGuests,
-        createAdditionalGuestDraft(),
+        createAdditionalGuestDraft(current.tableNumber),
       ],
     }));
     setFeedback(null);
@@ -1030,9 +1044,6 @@ function GuestEditor({
               <label className="block text-sm font-medium text-amber-950">
                 Table number
               </label>
-              <p className="text-xs text-amber-900/80">
-                Assign this first so the guest is seated before saving.
-              </p>
               <Select
                 value={draft.tableNumber || undefined}
                 onValueChange={(value: string) =>
@@ -1214,6 +1225,23 @@ function GuestEditor({
                       }
                       placeholder="Guest name"
                     />
+                    <Select
+                      value={additionalGuest.tableNumber || undefined}
+                      onValueChange={(value: string) =>
+                        updateAdditionalGuest(index, "tableNumber", value)
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Table number" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tableNumberOptions.map((tableNumber) => (
+                          <SelectItem key={tableNumber} value={tableNumber}>
+                            Table {tableNumber}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Select
                       value={additionalGuest.relationshipToGuest || undefined}
                       onValueChange={(

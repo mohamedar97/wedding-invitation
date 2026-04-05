@@ -48,8 +48,9 @@ const additionalGuestValidator = v.array(
   v.object({
     id: v.optional(v.string()),
     name: v.string(),
-    relationshipToGuest: additionalGuestRelationship,
-    gender: gender,
+    tableNumber: v.optional(v.number()),
+    relationshipToGuest: v.optional(additionalGuestRelationship),
+    gender: v.optional(gender),
     age: v.optional(v.number()),
     confirmed: v.optional(v.boolean()),
     confirmedAt: v.optional(v.string()),
@@ -77,7 +78,8 @@ function normalizeAdditionalGuests(
   additionalGuests?: {
     id?: string;
     name: string;
-    relationshipToGuest:
+    tableNumber?: number;
+    relationshipToGuest?:
       | "husband"
       | "wife"
       | "Fiance"
@@ -91,7 +93,7 @@ function normalizeAdditionalGuests(
       | "friend"
       | "colleague"
       | "other";
-    gender: "male" | "female";
+    gender?: "male" | "female";
     age?: number;
     confirmed?: boolean;
     confirmedAt?: string;
@@ -118,6 +120,10 @@ function normalizeAdditionalGuests(
       return {
         id,
         name: guest.name.trim(),
+        tableNumber:
+          guest.tableNumber !== undefined && Number.isFinite(guest.tableNumber)
+            ? guest.tableNumber
+            : undefined,
         relationshipToGuest: guest.relationshipToGuest,
         gender: guest.gender,
         age:
@@ -138,7 +144,8 @@ function validatePlusOneNameForAdditionalGuests(args: {
   additionalGuests?: {
     id?: string;
     name: string;
-    relationshipToGuest:
+    tableNumber?: number;
+    relationshipToGuest?:
       | "husband"
       | "wife"
       | "Fiance"
@@ -152,14 +159,16 @@ function validatePlusOneNameForAdditionalGuests(args: {
       | "friend"
       | "colleague"
       | "other";
-    gender: "male" | "female";
+    gender?: "male" | "female";
     age?: number;
     confirmed?: boolean;
     confirmedAt?: string;
   }[];
 }) {
   if ((args.additionalGuests?.length ?? 0) > 0 && !args.plusOneName?.trim()) {
-    throw new Error("Plus-one name is required when additional guests are added.");
+    throw new Error(
+      "Plus-one name is required when additional guests are added.",
+    );
   }
 }
 
@@ -212,6 +221,38 @@ export const listGuests = query({
         sensitivity: "base",
       }),
     );
+  },
+});
+
+export const backfillPlusOnesIntoAdditionalGuests = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const guests = await ctx.db.query("guests").collect();
+    let updatedCount = 0;
+
+    for (const guest of guests) {
+      const plusOneName = normalizeOptionalString(guest.plusOneName);
+      const hasAdditionalGuests = (guest.additionalGuests?.length ?? 0) > 0;
+
+      if (!plusOneName || hasAdditionalGuests) {
+        continue;
+      }
+
+      await ctx.db.patch(guest._id, {
+        additionalGuests: [
+          {
+            id: "1",
+            name: plusOneName,
+            tableNumber: guest.tableNumber,
+          },
+        ],
+      });
+      updatedCount += 1;
+    }
+
+    return {
+      updatedCount,
+    };
   },
 });
 

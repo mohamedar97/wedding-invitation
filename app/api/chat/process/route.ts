@@ -23,8 +23,8 @@ type GuestContext = {
   additionalGuests?: Array<{
     id: string;
     name: string;
-    relationshipToGuest: string;
-    gender: string;
+    relationshipToGuest?: string;
+    gender?: string;
     age?: number;
     confirmed?: boolean;
     confirmedAt?: string;

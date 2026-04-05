@@ -57,8 +57,9 @@ export default defineSchema({
         v.object({
           id: v.string(),
           name: v.string(),
-          relationshipToGuest: additionalGuestRelationship,
-          gender: gender,
+          tableNumber: v.optional(v.number()),
+          relationshipToGuest: v.optional(additionalGuestRelationship),
+          gender: v.optional(gender),
           age: v.optional(v.number()),
           confirmed: v.optional(v.boolean()),
           confirmedAt: v.optional(v.string()),
