@@ -65,6 +65,7 @@ type GuestNotesForAI = {
   extraNotes?: string;
 };
 type GuestRecordWithLocalFields = GuestRecord & {
+  tableNumber?: number;
   guestSide?: GuestSideOption;
   mainGuestGender?: GenderOption;
   mainGuestAge?: number;
@@ -98,6 +99,7 @@ type MessageRecord = Doc<"messages">;
 type GuestDraft = {
   guestId?: GuestRecord["_id"];
   mainGuestName: string;
+  tableNumber: string;
   mainGuestGender: "" | GenderOption;
   mainGuestAge: string;
   slug: string;
@@ -154,6 +156,14 @@ const GUEST_SIDE_OPTIONS: Array<{ value: GuestSideOption; label: string }> = [
   { value: "bride", label: "Bride side" },
 ];
 
+const GROOM_TABLE_NUMBER_OPTIONS = Array.from({ length: 8 }, (_, index) =>
+  String(index + 1),
+);
+
+const BRIDE_TABLE_NUMBER_OPTIONS = Array.from({ length: 12 }, (_, index) =>
+  String(index + 9),
+);
+
 const COMMUNICATION_STYLE_OPTIONS: Array<{
   value: CommunicationStyleOption;
   label: string;
@@ -204,6 +214,7 @@ function createAdditionalGuestDraft(): AdditionalGuestDraft {
 function createEmptyDraft(): GuestDraft {
   return {
     mainGuestName: "",
+    tableNumber: "",
     mainGuestGender: "",
     mainGuestAge: "",
     slug: "",
@@ -231,6 +242,8 @@ function createDraft(rawGuest: GuestRecord): GuestDraft {
   return {
     guestId: guest._id,
     mainGuestName: guest.mainGuestName,
+    tableNumber:
+      guest.tableNumber !== undefined ? String(guest.tableNumber) : "",
     mainGuestGender: guest.mainGuestGender ?? "",
     mainGuestAge:
       guest.mainGuestAge !== undefined ? String(guest.mainGuestAge) : "",
@@ -317,6 +330,18 @@ function getMinimumValidationError(
 
 function getGuestSideLabel(side: GuestSideOption) {
   return side === "groom" ? "Groom side" : "Bride side";
+}
+
+function getTableNumberOptions(guestSide: GuestDraft["guestSide"]) {
+  if (guestSide === "groom") {
+    return GROOM_TABLE_NUMBER_OPTIONS;
+  }
+
+  if (guestSide === "bride") {
+    return BRIDE_TABLE_NUMBER_OPTIONS;
+  }
+
+  return [];
 }
 
 function getGuestSideValue(guest: GuestRecord) {
@@ -779,6 +804,7 @@ function GuestEditor({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const rowKeyPrefix = draft.guestId ?? "new-guest";
+  const tableNumberOptions = getTableNumberOptions(draft.guestSide);
   const minimumValidationError = getMinimumValidationError(
     draft,
     existingGuests,
@@ -788,7 +814,24 @@ function GuestEditor({
     key: K,
     value: GuestDraft[K],
   ) {
-    setDraft((current) => ({ ...current, [key]: value }));
+    setDraft((current) => {
+      const nextDraft = { ...current, [key]: value };
+
+      if (key === "guestSide") {
+        const allowedTableNumbers = getTableNumberOptions(
+          value as GuestDraft["guestSide"],
+        );
+
+        if (
+          nextDraft.tableNumber &&
+          !allowedTableNumbers.includes(nextDraft.tableNumber)
+        ) {
+          nextDraft.tableNumber = "";
+        }
+      }
+
+      return nextDraft;
+    });
     setFeedback(null);
     setError(null);
   }
@@ -855,6 +898,7 @@ function GuestEditor({
           mode === "edit" ? initialDraft.slug.trim() || undefined : undefined;
         const payload = {
           mainGuestName: draft.mainGuestName,
+          tableNumber: draft.tableNumber ? Number(draft.tableNumber) : undefined,
           mainGuestGender: draft.mainGuestGender || undefined,
           mainGuestAge: draft.mainGuestAge
             ? Number(draft.mainGuestAge)
@@ -959,9 +1003,11 @@ function GuestEditor({
   return (
     <>
       <p className="mb-4 text-sm text-muted-foreground">
-        Required to create an invitation: main guest name, slug, phone number,
-        invitation language, and guest side. Plus-one name is also required when
-        additional guests are added.
+        Start by assigning the guest to a table. The database allows leaving it
+        empty, but this field is surfaced first so seating gets filled in during
+        admin entry. Main guest name, slug, phone number, invitation language,
+        and guest side are still required to create an invitation. Plus-one name
+        is also required when additional guests are added.
       </p>
 
       <section className="space-y-4">
@@ -980,6 +1026,31 @@ function GuestEditor({
             </span>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-amber-950">
+                Table number
+              </label>
+              <p className="text-xs text-amber-900/80">
+                Assign this first so the guest is seated before saving.
+              </p>
+              <Select
+                value={draft.tableNumber || undefined}
+                onValueChange={(value: string) =>
+                  updateDraft("tableNumber", value)
+                }
+              >
+                <SelectTrigger className="w-full border-amber-400 bg-white">
+                  <SelectValue placeholder="Assign table number" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tableNumberOptions.map((tableNumber) => (
+                    <SelectItem key={tableNumber} value={tableNumber}>
+                      Table {tableNumber}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-amber-950">
                 Main guest name

@@ -15,6 +15,7 @@ type GuestContext = {
   _id: string;
   slug: string;
   mainGuestName: string;
+  tableNumber?: number;
   mainGuestGender?: "male" | "female";
   mainGuestAge?: number;
   mainGuestConfirmed?: boolean;
@@ -89,6 +90,7 @@ function buildSystemPrompt(guest: GuestContext) {
 
   return buildZaynPrompt({
     guestName: guest.mainGuestName,
+    tableNumber: guest.tableNumber,
     mainGuestGender: guest.mainGuestGender,
     mainGuestAge: guest.mainGuestAge,
     rsvpStatus:

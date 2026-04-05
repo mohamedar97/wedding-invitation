@@ -45,6 +45,7 @@ const guestSide = v.union(v.literal("groom"), v.literal("bride"));
 export default defineSchema({
   guests: defineTable({
     mainGuestName: v.string(),
+    tableNumber: v.optional(v.number()),
     mainGuestGender: v.optional(gender),
     mainGuestAge: v.optional(v.number()),
     mainGuestConfirmed: v.optional(v.boolean()),

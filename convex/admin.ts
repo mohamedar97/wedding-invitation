@@ -218,6 +218,7 @@ export const listGuests = query({
 export const createGuest = mutation({
   args: {
     mainGuestName: v.string(),
+    tableNumber: v.optional(v.number()),
     mainGuestGender: v.optional(gender),
     mainGuestAge: v.optional(v.number()),
     mainGuestConfirmed: v.optional(v.boolean()),
@@ -260,6 +261,7 @@ export const createGuest = mutation({
 
     return await ctx.db.insert("guests", {
       mainGuestName,
+      tableNumber: args.tableNumber,
       mainGuestGender: args.mainGuestGender,
       mainGuestAge: args.mainGuestAge,
       mainGuestConfirmed: args.mainGuestConfirmed,
@@ -279,6 +281,7 @@ export const updateGuest = mutation({
   args: {
     guestId: v.id("guests"),
     mainGuestName: v.string(),
+    tableNumber: v.optional(v.number()),
     mainGuestGender: v.optional(gender),
     mainGuestAge: v.optional(v.number()),
     mainGuestConfirmed: v.optional(v.boolean()),
@@ -321,6 +324,7 @@ export const updateGuest = mutation({
 
     await ctx.db.patch(args.guestId, {
       mainGuestName,
+      tableNumber: args.tableNumber,
       mainGuestGender: args.mainGuestGender,
       mainGuestAge: args.mainGuestAge,
       mainGuestConfirmed: args.mainGuestConfirmed,

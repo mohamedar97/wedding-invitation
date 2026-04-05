@@ -11,6 +11,7 @@ type GuestSide = "groom" | "bride";
 
 interface GuestContext {
   guestName: string;
+  tableNumber?: number;
   languageMode?: LanguageMode;
   communicationStyle?: CommunicationStyle;
   relationshipToCouple?: RelationshipToCouple;
@@ -235,6 +236,9 @@ ${toBulletList([
 Guest context:
 ${toBulletList([
   `Guest name: ${guest.guestName}`,
+  guest.tableNumber !== undefined
+    ? `Table number: ${guest.tableNumber}`
+    : undefined,
   `Language mode: ${guest.languageMode}`,
   guest.communicationStyle
     ? `Communication style: ${guest.communicationStyle}`
