@@ -224,6 +224,43 @@ export const listGuests = query({
   },
 });
 
+export const listPrintableGuestCards = query({
+  args: {},
+  handler: async (ctx) => {
+    const guests = await ctx.db.query("guests").collect();
+    const cards = guests.flatMap((guest) => {
+      const mainCard = {
+        key: `${guest._id}-main`,
+        name: guest.mainGuestName,
+        tableNumber: guest.tableNumber,
+        kind: "main" as const,
+        guestSide: guest.guestSide,
+        slug: guest.slug,
+        guestId: guest._id,
+      };
+      const additionalCards =
+        guest.additionalGuests?.map((additionalGuest) => ({
+          key: `${guest._id}-additional-${additionalGuest.id}`,
+          name: additionalGuest.name,
+          tableNumber: additionalGuest.tableNumber,
+          kind: "additional" as const,
+          guestSide: guest.guestSide,
+          slug: guest.slug,
+          guestId: guest._id,
+          additionalGuestId: additionalGuest.id,
+        })) ?? [];
+
+      return [mainCard, ...additionalCards];
+    });
+
+    return cards.sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, {
+        sensitivity: "base",
+      }),
+    );
+  },
+});
+
 export const backfillPlusOnesIntoAdditionalGuests = mutation({
   args: {},
   handler: async (ctx) => {

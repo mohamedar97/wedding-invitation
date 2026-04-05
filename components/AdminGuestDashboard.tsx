@@ -7,6 +7,7 @@ import { CheckIcon, CopyIcon, MessageCircleIcon } from "lucide-react";
 import { revalidateInvitationPaths } from "@/app/admin/actions";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
+import GuestNameCard from "@/components/GuestNameCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  buildGuestCardPreviewHref,
+  type PrintableGuestCard,
+} from "@/lib/guestNameCards";
+import {
+  downloadGuestCardZip,
+  downloadSingleGuestCard,
+  loadGuestNameCardEmbeddedAssets,
+} from "@/lib/guestNameCardExport";
 import { cn } from "@/lib/utils";
 
 type GuestRecord = Doc<"guests">;
@@ -565,6 +575,183 @@ function SendInvitationButton({
   );
 }
 
+function NameCardTools() {
+  const printableCards = useQuery(api.admin.listPrintableGuestCards, {});
+  const [customName, setCustomName] = useState("");
+  const [customTableNumber, setCustomTableNumber] = useState("");
+  const [isBulkExporting, setIsBulkExporting] = useState(false);
+  const [isCustomExporting, setIsCustomExporting] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const trimmedCustomName = customName.trim();
+  const customCard: PrintableGuestCard | null = trimmedCustomName
+    ? {
+        key: "custom-card",
+        kind: "custom",
+        name: trimmedCustomName,
+        tableNumber: customTableNumber
+          ? Number.parseInt(customTableNumber, 10)
+          : undefined,
+      }
+    : null;
+  const customPreviewHref = customCard
+    ? buildGuestCardPreviewHref({
+        name: customCard.name,
+        tableNumber: customCard.tableNumber,
+      })
+    : undefined;
+
+  async function handleBulkExport() {
+    if (!printableCards?.length) {
+      setError("No guest cards are available yet.");
+      setFeedback(null);
+      return;
+    }
+
+    setIsBulkExporting(true);
+    setError(null);
+    setFeedback(null);
+
+    try {
+      const assets = await loadGuestNameCardEmbeddedAssets();
+      await downloadGuestCardZip(
+        printableCards as PrintableGuestCard[],
+        assets,
+      );
+      setFeedback(`Downloaded ${printableCards.length} guest cards.`);
+    } catch (exportError) {
+      setError(
+        exportError instanceof Error
+          ? exportError.message
+          : "Failed to export guest cards.",
+      );
+    } finally {
+      setIsBulkExporting(false);
+    }
+  }
+
+  async function handleCustomExport() {
+    if (!customCard) {
+      setError("Enter a custom guest name first.");
+      setFeedback(null);
+      return;
+    }
+
+    setIsCustomExporting(true);
+    setError(null);
+    setFeedback(null);
+
+    try {
+      const assets = await loadGuestNameCardEmbeddedAssets();
+      await downloadSingleGuestCard(customCard, assets);
+      setFeedback(`Downloaded custom card for ${customCard.name}.`);
+    } catch (exportError) {
+      setError(
+        exportError instanceof Error
+          ? exportError.message
+          : "Failed to export the custom card.",
+      );
+    } finally {
+      setIsCustomExporting(false);
+    }
+  }
+
+  return (
+    <Card className="border-stone-300/80 bg-white/90 backdrop-blur">
+      <CardHeader>
+        <CardTitle>Name cards</CardTitle>
+        <CardDescription>
+          Export A6 PNG cards for all main and additional guests, or make a
+          one-off custom card.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="space-y-6">
+          <section className="space-y-3 rounded-xl border border-stone-200 p-4">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold">Bulk export</h3>
+              <p className="text-sm text-muted-foreground">
+                Includes the main guest and every additional guest. Plus-one
+                display names are not exported directly.
+              </p>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {printableCards === undefined
+                ? "Loading printable cards..."
+                : `${printableCards.length} cards ready for export`}
+            </div>
+            <Button
+              type="button"
+              onClick={handleBulkExport}
+              disabled={isBulkExporting || printableCards === undefined}
+            >
+              {isBulkExporting ? "Exporting ZIP..." : "Export all guest cards"}
+            </Button>
+          </section>
+
+          <section className="space-y-4 rounded-xl border border-stone-200 p-4">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold">Custom card</h3>
+              <p className="text-sm text-muted-foreground">
+                Enter a manual name and optional table number, then preview or
+                export a one-off PNG.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Input
+                value={customName}
+                onChange={(event) => setCustomName(event.target.value)}
+                placeholder="Guest name"
+              />
+              <Input
+                type="number"
+                min="1"
+                inputMode="numeric"
+                value={customTableNumber}
+                onChange={(event) => setCustomTableNumber(event.target.value)}
+                placeholder="Table number (optional)"
+              />
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                asChild={Boolean(customPreviewHref)}
+                disabled={!customPreviewHref}
+              >
+                {customPreviewHref ? (
+                  <a
+                    href={customPreviewHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Preview custom card
+                  </a>
+                ) : (
+                  <span>Preview custom card</span>
+                )}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCustomExport}
+                disabled={isCustomExporting}
+              >
+                {isCustomExporting ? "Exporting PNG..." : "Export custom PNG"}
+              </Button>
+            </div>
+          </section>
+
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          {feedback ? (
+            <p className="text-sm text-emerald-700">{feedback}</p>
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminGuestDashboard() {
   const guests = useQuery(api.admin.listGuests, {});
   const [isCreatingGuest, setIsCreatingGuest] = useState(false);
@@ -636,7 +823,7 @@ export default function AdminGuestDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <Card className="h-fit border-stone-300/80 bg-white/90 backdrop-blur">
+        <Card className="border-stone-300/80 bg-white/90 backdrop-blur lg:max-h-[calc(100vh-12rem)]">
           <CardHeader>
             <CardTitle>Guests</CardTitle>
             <CardDescription>{guests.length} total records</CardDescription>
@@ -682,7 +869,7 @@ export default function AdminGuestDashboard() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 overflow-y-auto lg:max-h-[calc(100vh-23rem)]">
             {filteredGuests.length ? (
               filteredGuests.map((guest) => (
                 <div
@@ -787,6 +974,8 @@ export default function AdminGuestDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <NameCardTools />
     </div>
   );
 }
