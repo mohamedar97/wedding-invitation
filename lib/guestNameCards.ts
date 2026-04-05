@@ -9,11 +9,12 @@ export type PrintableGuestCard = {
   additionalGuestId?: string;
 };
 
-export const GUEST_NAME_CARD_SUBTITLE = "Thank you for coming";
-export const GUEST_NAME_CARD_WIDTH_PX = 1240;
-export const GUEST_NAME_CARD_HEIGHT_PX = 1748;
-export const GUEST_NAME_CARD_WIDTH_MM = 105;
-export const GUEST_NAME_CARD_HEIGHT_MM = 148;
+export const GUEST_NAME_CARD_SUBTITLE =
+  "Thank you for being part of our special day.\nYour presence means the world to us.\nLove, Mohamed and Habiba";
+export const GUEST_NAME_CARD_WIDTH_PX = 874;
+export const GUEST_NAME_CARD_HEIGHT_PX = 1240;
+export const GUEST_NAME_CARD_WIDTH_MM = 74;
+export const GUEST_NAME_CARD_HEIGHT_MM = 105;
 
 export function containsArabic(text: string) {
   return /[\u0600-\u06FF]/.test(text);

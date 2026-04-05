@@ -7,11 +7,14 @@ import {
 import {
   buildGuestCardFilename,
   type PrintableGuestCard,
+  GUEST_NAME_CARD_HEIGHT_MM,
   GUEST_NAME_CARD_HEIGHT_PX,
+  GUEST_NAME_CARD_WIDTH_MM,
   GUEST_NAME_CARD_WIDTH_PX,
 } from "@/lib/guestNameCards";
 
 const assetCache = new Map<string, Promise<string>>();
+const PDF_MARGIN_MM = 7;
 
 function fetchAsDataUrl(path: string) {
   if (!assetCache.has(path)) {
@@ -43,13 +46,17 @@ function fetchAsDataUrl(path: string) {
 }
 
 export async function loadGuestNameCardEmbeddedAssets(): Promise<GuestNameCardEmbeddedAssets> {
-  const [topRightImageHref, bottomLeftImageHref, englishFontSrc, arabicFontSrc] =
-    await Promise.all([
-      fetchAsDataUrl("/tr.webp"),
-      fetchAsDataUrl("/bl.webp"),
-      fetchAsDataUrl("/above-the-beyond-script.ttf"),
-      fetchAsDataUrl("/UKIJDiY.ttf"),
-    ]);
+  const [
+    topRightImageHref,
+    bottomLeftImageHref,
+    englishFontSrc,
+    arabicFontSrc,
+  ] = await Promise.all([
+    fetchAsDataUrl("/tr.webp"),
+    fetchAsDataUrl("/bl.webp"),
+    fetchAsDataUrl("/above-the-beyond-script.ttf"),
+    fetchAsDataUrl("/UKIJDiY.ttf"),
+  ]);
 
   return {
     topRightImageHref,
@@ -59,7 +66,7 @@ export async function loadGuestNameCardEmbeddedAssets(): Promise<GuestNameCardEm
   };
 }
 
-async function svgMarkupToPngBlob(svgMarkup: string) {
+async function svgMarkupToJpegBlob(svgMarkup: string) {
   const svgBlob = new Blob([svgMarkup], {
     type: "image/svg+xml;charset=utf-8",
   });
@@ -86,14 +93,18 @@ async function svgMarkupToPngBlob(svgMarkup: string) {
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
     return await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          reject(new Error("Failed to export PNG."));
-          return;
-        }
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Failed to export PDF preview image."));
+            return;
+          }
 
-        resolve(blob);
-      }, "image/png");
+          resolve(blob);
+        },
+        "image/jpeg",
+        0.98,
+      );
     });
   } finally {
     URL.revokeObjectURL(objectUrl);
@@ -144,9 +155,7 @@ function getDosDateTime(date = new Date()) {
     (date.getMinutes() << 5) |
     Math.floor(date.getSeconds() / 2);
   const dosDate =
-    ((year - 1980) << 9) |
-    ((date.getMonth() + 1) << 5) |
-    date.getDate();
+    ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
 
   return {
     dosDate,
@@ -263,32 +272,185 @@ async function exportCardToPngBlob(
     embedAssets: embeddedAssets,
   });
 
-  return await svgMarkupToPngBlob(svgMarkup);
+  return await svgMarkupToJpegBlob(svgMarkup);
 }
 
-export async function downloadSingleGuestCard(
+function mmToPoints(value: number) {
+  return (value * 72) / 25.4;
+}
+
+function escapePdfString(value: string) {
+  return value
+    .replaceAll("\\", "\\\\")
+    .replaceAll("(", "\\(")
+    .replaceAll(")", "\\)");
+}
+
+function concatBytes(chunks: Uint8Array[]) {
+  return concatUint8Arrays(chunks);
+}
+
+function createPdfDocument({
+  imageBytes,
+  imageWidthPx,
+  imageHeightPx,
+  pageWidthMm,
+  pageHeightMm,
+  imageXPt,
+  imageYPt,
+  imageWidthPt,
+  imageHeightPt,
+  title,
+}: {
+  imageBytes: Uint8Array;
+  imageWidthPx: number;
+  imageHeightPx: number;
+  pageWidthMm: number;
+  pageHeightMm: number;
+  imageXPt: number;
+  imageYPt: number;
+  imageWidthPt: number;
+  imageHeightPt: number;
+  title: string;
+}) {
+  const encoder = new TextEncoder();
+  const parts: Uint8Array[] = [];
+  const offsets: number[] = [];
+  let currentOffset = 0;
+
+  function pushString(value: string) {
+    const bytes = encoder.encode(value);
+    parts.push(bytes);
+    currentOffset += bytes.length;
+  }
+
+  function pushBytes(value: Uint8Array) {
+    parts.push(value);
+    currentOffset += value.length;
+  }
+
+  function beginObject(objectNumber: number) {
+    offsets[objectNumber] = currentOffset;
+    pushString(`${objectNumber} 0 obj\n`);
+  }
+
+  function endObject() {
+    pushString("endobj\n");
+  }
+
+  const pageWidthPt = mmToPoints(pageWidthMm);
+  const pageHeightPt = mmToPoints(pageHeightMm);
+  const contentStream = `0.984 0.965 0.937 rg
+0 0 ${pageWidthPt.toFixed(3)} ${pageHeightPt.toFixed(3)} re
+f
+q
+${imageWidthPt.toFixed(3)} 0 0 ${imageHeightPt.toFixed(3)} ${imageXPt.toFixed(3)} ${imageYPt.toFixed(3)} cm
+/Im0 Do
+Q`;
+
+  pushString("%PDF-1.3\n%\u00e2\u00e3\u00cf\u00d3\n");
+
+  beginObject(1);
+  pushString("<< /Type /Catalog /Pages 2 0 R >>\n");
+  endObject();
+
+  beginObject(2);
+  pushString("<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n");
+  endObject();
+
+  beginObject(3);
+  pushString(
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidthPt.toFixed(3)} ${pageHeightPt.toFixed(3)}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\n`,
+  );
+  endObject();
+
+  beginObject(4);
+  pushString(
+    `<< /Type /XObject /Subtype /Image /Width ${imageWidthPx} /Height ${imageHeightPx} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>\nstream\n`,
+  );
+  pushBytes(imageBytes);
+  pushString("\nendstream\n");
+  endObject();
+
+  beginObject(5);
+  const contentBytes = encoder.encode(contentStream);
+  pushString(`<< /Length ${contentBytes.length} >>\nstream\n`);
+  pushBytes(contentBytes);
+  pushString("\nendstream\n");
+  endObject();
+
+  beginObject(6);
+  pushString(
+    `<< /Title (${escapePdfString(title)}) /Producer (Codex) /Creator (Wedding Invitation Admin) >>\n`,
+  );
+  endObject();
+
+  const xrefOffset = currentOffset;
+  const objectCount = 6;
+  pushString(`xref\n0 ${objectCount + 1}\n`);
+  pushString("0000000000 65535 f \n");
+
+  for (let objectNumber = 1; objectNumber <= objectCount; objectNumber += 1) {
+    pushString(`${String(offsets[objectNumber]).padStart(10, "0")} 00000 n \n`);
+  }
+
+  pushString(
+    `trailer\n<< /Size ${objectCount + 1} /Root 1 0 R /Info 6 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`,
+  );
+
+  return new Blob([concatBytes(parts)], { type: "application/pdf" });
+}
+
+async function exportCardToPdfBlob(
   card: PrintableGuestCard,
   embeddedAssets: GuestNameCardEmbeddedAssets,
 ) {
-  const pngBlob = await exportCardToPngBlob(card, embeddedAssets);
-  triggerDownload(pngBlob, buildGuestCardFilename(card));
+  const jpegBlob = await exportCardToPngBlob(card, embeddedAssets);
+  const imageBytes = new Uint8Array(await jpegBlob.arrayBuffer());
+  const pageWidthMm = GUEST_NAME_CARD_WIDTH_MM + PDF_MARGIN_MM * 2;
+  const pageHeightMm = GUEST_NAME_CARD_HEIGHT_MM + PDF_MARGIN_MM * 2;
+
+  return createPdfDocument({
+    imageBytes,
+    imageWidthPx: GUEST_NAME_CARD_WIDTH_PX,
+    imageHeightPx: GUEST_NAME_CARD_HEIGHT_PX,
+    pageWidthMm,
+    pageHeightMm,
+    imageXPt: mmToPoints(PDF_MARGIN_MM),
+    imageYPt: mmToPoints(PDF_MARGIN_MM),
+    imageWidthPt: mmToPoints(GUEST_NAME_CARD_WIDTH_MM),
+    imageHeightPt: mmToPoints(GUEST_NAME_CARD_HEIGHT_MM),
+    title: `${card.name} name card`,
+  });
 }
 
-export async function downloadGuestCardZip(
+function buildGuestCardPdfFilename(card: PrintableGuestCard) {
+  return buildGuestCardFilename(card).replace(/\.png$/, ".pdf");
+}
+
+export async function downloadSingleGuestCardPdf(
+  card: PrintableGuestCard,
+  embeddedAssets: GuestNameCardEmbeddedAssets,
+) {
+  const pdfBlob = await exportCardToPdfBlob(card, embeddedAssets);
+  triggerDownload(pdfBlob, buildGuestCardPdfFilename(card));
+}
+
+export async function downloadGuestCardPdfZip(
   cards: PrintableGuestCard[],
   embeddedAssets: GuestNameCardEmbeddedAssets,
 ) {
   const files: Array<{ fileName: string; data: Uint8Array }> = [];
 
   for (const card of cards) {
-    const pngBlob = await exportCardToPngBlob(card, embeddedAssets);
+    const pdfBlob = await exportCardToPdfBlob(card, embeddedAssets);
     files.push({
-      fileName: buildGuestCardFilename(card),
-      data: new Uint8Array(await pngBlob.arrayBuffer()),
+      fileName: buildGuestCardPdfFilename(card),
+      data: new Uint8Array(await pdfBlob.arrayBuffer()),
     });
   }
 
   const zipBytes = createZipArchive(files);
   const zipBlob = new Blob([zipBytes], { type: "application/zip" });
-  triggerDownload(zipBlob, "guest-name-cards.zip");
+  triggerDownload(zipBlob, "guest-name-card-pdfs.zip");
 }

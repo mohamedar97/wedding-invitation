@@ -31,8 +31,8 @@ import {
   type PrintableGuestCard,
 } from "@/lib/guestNameCards";
 import {
-  downloadGuestCardZip,
-  downloadSingleGuestCard,
+  downloadGuestCardPdfZip,
+  downloadSingleGuestCardPdf,
   loadGuestNameCardEmbeddedAssets,
 } from "@/lib/guestNameCardExport";
 import { cn } from "@/lib/utils";
@@ -615,11 +615,11 @@ function NameCardTools() {
 
     try {
       const assets = await loadGuestNameCardEmbeddedAssets();
-      await downloadGuestCardZip(
+      await downloadGuestCardPdfZip(
         printableCards as PrintableGuestCard[],
         assets,
       );
-      setFeedback(`Downloaded ${printableCards.length} guest cards.`);
+      setFeedback(`Downloaded ${printableCards.length} guest card PDFs.`);
     } catch (exportError) {
       setError(
         exportError instanceof Error
@@ -644,8 +644,8 @@ function NameCardTools() {
 
     try {
       const assets = await loadGuestNameCardEmbeddedAssets();
-      await downloadSingleGuestCard(customCard, assets);
-      setFeedback(`Downloaded custom card for ${customCard.name}.`);
+      await downloadSingleGuestCardPdf(customCard, assets);
+      setFeedback(`Downloaded custom PDF for ${customCard.name}.`);
     } catch (exportError) {
       setError(
         exportError instanceof Error
@@ -662,8 +662,8 @@ function NameCardTools() {
       <CardHeader>
         <CardTitle>Name cards</CardTitle>
         <CardDescription>
-          Export A6 PNG cards for all main and additional guests, or make a
-          one-off custom card.
+          Export print-ready A7 PDFs for all main and additional guests, or
+          make a one-off custom card PDF.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
@@ -673,7 +673,8 @@ function NameCardTools() {
               <h3 className="text-sm font-semibold">Bulk export</h3>
               <p className="text-sm text-muted-foreground">
                 Includes the main guest and every additional guest. Plus-one
-                display names are not exported directly.
+                display names are not exported directly. Each PDF includes a 7
+                mm outer margin for printing and cutting.
               </p>
             </div>
             <div className="text-sm text-muted-foreground">
@@ -686,7 +687,7 @@ function NameCardTools() {
               onClick={handleBulkExport}
               disabled={isBulkExporting || printableCards === undefined}
             >
-              {isBulkExporting ? "Exporting ZIP..." : "Export all guest cards"}
+              {isBulkExporting ? "Exporting ZIP..." : "Export all guest PDFs"}
             </Button>
           </section>
 
@@ -695,7 +696,7 @@ function NameCardTools() {
               <h3 className="text-sm font-semibold">Custom card</h3>
               <p className="text-sm text-muted-foreground">
                 Enter a manual name and optional table number, then preview or
-                export a one-off PNG.
+                export a one-off PDF.
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -737,7 +738,7 @@ function NameCardTools() {
                 onClick={handleCustomExport}
                 disabled={isCustomExporting}
               >
-                {isCustomExporting ? "Exporting PNG..." : "Export custom PNG"}
+                {isCustomExporting ? "Exporting PDF..." : "Export custom PDF"}
               </Button>
             </div>
           </section>
