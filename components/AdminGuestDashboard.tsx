@@ -635,8 +635,8 @@ export default function AdminGuestDashboard() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <Card className="h-fit border-stone-300/80 bg-white/90 backdrop-blur">
+      <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
+        <Card className="border-stone-300/80 bg-white/90 backdrop-blur lg:sticky lg:top-8 lg:flex lg:max-h-[calc(100vh-4rem)] lg:min-h-0 lg:flex-col">
           <CardHeader>
             <CardTitle>Guests</CardTitle>
             <CardDescription>{guests.length} total records</CardDescription>
@@ -682,7 +682,7 @@ export default function AdminGuestDashboard() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 lg:min-h-0 lg:overflow-y-auto">
             {filteredGuests.length ? (
               filteredGuests.map((guest) => (
                 <div

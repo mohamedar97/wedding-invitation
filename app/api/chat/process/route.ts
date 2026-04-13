@@ -87,10 +87,11 @@ function buildSystemPrompt(guest: GuestContext) {
   const languageMode =
     guest.notesForAI?.languageMode ??
     (guest.preferedLanguage === "ar" ? "arabic" : "english");
+  const guestSide = guest.guestSide ?? guest.notesForAI?.guestSide;
 
   return buildZaynPrompt({
     guestName: guest.mainGuestName,
-    tableNumber: guest.tableNumber,
+    tableNumber: guestSide === "groom" ? guest.tableNumber : undefined,
     mainGuestGender: guest.mainGuestGender,
     mainGuestAge: guest.mainGuestAge,
     rsvpStatus:
@@ -101,7 +102,7 @@ function buildSystemPrompt(guest: GuestContext) {
           : "declined",
     mainGuestConfirmed: guest.mainGuestConfirmed,
     additionalGuests: guest.additionalGuests,
-    guestSide: guest.guestSide ?? guest.notesForAI?.guestSide,
+    guestSide,
     ...guest.notesForAI,
     languageMode,
   });

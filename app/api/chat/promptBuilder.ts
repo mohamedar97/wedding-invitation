@@ -48,7 +48,7 @@ const event = {
   venueMapLink: "https://maps.app.goo.gl/eBPPt4s8BiJTbbE2A",
   city: "Cairo",
   country: "Egypt",
-  ceremonyTime: "6:00 PM",
+  ceremonyTime: "4:00 PM",
   timezone: "UTC+02:00",
   dressCode: "formal",
   dressCodeNotes:
@@ -75,6 +75,8 @@ const humanizeValue = (value?: string): string | undefined =>
 
 export function buildZaynPrompt(guest: GuestContext): string {
   const languageMode = guest.languageMode ?? "english";
+  const shouldIncludeTableNumber =
+    guest.guestSide === "groom" && guest.tableNumber !== undefined;
 
   const languageInstructions = [
     "You can speak in English, Arabic, or Franco Arabic.",
@@ -190,6 +192,15 @@ Operational rules:
   approval, do not decide on your own unless explicitly allowed.
 - If the guest declines, respond graciously and warmly.
 - If the guest accepts, respond warmly and help with any next details.
+- When the guest has just confirmed they are attending, the first reply after
+  that confirmation must do all of the following in one message:
+  - Confirm if their plus ones are confirmed
+  - Say that the wedding will start at 4:00 PM instead of the initial 6:00 PM due to power regulations in Cairo
+  - confirm warmly that they are on the list
+  - share the venue map link right away
+  - gently mention that children are not included in the invitation
+  - mention their table number if one exists in the guest context
+  - keep the message concise and do not turn it into a long checklist
 - If the guest is unsure, make the next step easy and low-pressure.
 - Do not repeat questions that were already answered unless you are politely
   verifying conflicting information.
@@ -236,9 +247,7 @@ ${toBulletList([
 Guest context:
 ${toBulletList([
   `Guest name: ${guest.guestName}`,
-  guest.tableNumber !== undefined
-    ? `Table number: ${guest.tableNumber}`
-    : undefined,
+  shouldIncludeTableNumber ? `Table number: ${guest.tableNumber}` : undefined,
   `Language mode: ${guest.languageMode}`,
   guest.communicationStyle
     ? `Communication style: ${guest.communicationStyle}`
@@ -247,14 +256,16 @@ ${toBulletList([
   guest.relationshipToCouple
     ? `Relationship to couple: ${humanizeValue(guest.relationshipToCouple)}`
     : undefined,
-  guest.mainGuestGender ? `Main guest gender: ${guest.mainGuestGender}` : undefined,
-  guest.mainGuestAge !== undefined ? `Main guest age: ${guest.mainGuestAge}` : undefined,
+  guest.mainGuestGender
+    ? `Main guest gender: ${guest.mainGuestGender}`
+    : undefined,
+  guest.mainGuestAge !== undefined
+    ? `Main guest age: ${guest.mainGuestAge}`
+    : undefined,
   guest.relationship ? `Relationship notes: ${guest.relationship}` : undefined,
   guest.personality ? `Personality notes: ${guest.personality}` : undefined,
   guest.personalInfo ? `Personal info: ${guest.personalInfo}` : undefined,
-  guest.weddingContext
-    ? `Wedding context: ${guest.weddingContext}`
-    : undefined,
+  guest.weddingContext ? `Wedding context: ${guest.weddingContext}` : undefined,
   guest.deepStuff ? `Deep personal context: ${guest.deepStuff}` : undefined,
   guest.rsvpStatus ? `RSVP status: ${guest.rsvpStatus}` : undefined,
   `Main guest confirmed: ${boolText(guest.mainGuestConfirmed)}`,
@@ -273,7 +284,9 @@ ${toBulletList([
               ? humanizeValue(additionalGuest.relationshipToGuest)
               : undefined,
             additionalGuest.gender,
-            additionalGuest.age !== undefined ? `age: ${additionalGuest.age}` : undefined,
+            additionalGuest.age !== undefined
+              ? `age: ${additionalGuest.age}`
+              : undefined,
             status,
           ]
             .filter(Boolean)

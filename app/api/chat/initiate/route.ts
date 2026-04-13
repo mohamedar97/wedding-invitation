@@ -48,6 +48,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Guest not found." }, { status: 404 });
     }
 
+    if (guest.mainGuestConfirmed === false) {
+      return NextResponse.json(
+        { error: "Declined guests should not receive an initiation message." },
+        { status: 409 },
+      );
+    }
+
     const conversation = await fetchQuery(api.conversations.getByGuestId, {
       guestId: guest._id,
     });

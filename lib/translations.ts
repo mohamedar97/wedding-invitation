@@ -52,8 +52,8 @@ export const invitationTranslations = {
       AR: "أبريل",
     },
     time: {
-      EN: "3 PM",
-      AR: "٣ عصرا",
+      EN: "4 PM",
+      AR: "٤ عصرا",
     },
   },
   location: {
